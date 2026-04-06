@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photelier Academy AI サポート</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+      background: #f0f4f6;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: white;
+      border-bottom: 1px solid #d5e5eb;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2c4a58;
+      letter-spacing: 0.5px;
+    }
+
+    .logo span { color: #5d8fa3; }
+
+    #student-select-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    #student-select-area label {
+      font-size: 13px;
+      color: #4a6070;
+    }
+
+    select {
+      padding: 6px 12px;
+      border: 1px solid #ccd8de;
+      border-radius: 20px;
+      background: #f0f4f6;
+      color: #1c2b35;
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    select:focus { border-color: #5d8fa3; }
+
+    #reset-btn {
+      padding: 6px 14px;
+      background: none;
+      border: 1px solid #ccd8de;
+      border-radius: 20px;
+      color: #4a7a8a;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #reset-btn:hover { background: #e0edf2; border-color: #5d8fa3; }
+
+    #daily-counter {
+      font-size: 12px;
+      color: #4a7a8a;
+      background: #e0edf2;
+      border: 1px solid #ccd8de;
+      border-radius: 20px;
+      padding: 5px 12px;
+    }
+
+    #checklist-btn {
+      padding: 6px 14px;
+      background: none;
+      border: 1px solid #ccd8de;
+      border-radius: 20px;
+      color: #4a7a8a;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #checklist-btn:hover { background: #e0edf2; border-color: #5d8fa3; }
+
+    #booking-btn {
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #5d8fa3, #3d7080);
+      border: none;
+      border-radius: 20px;
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    #booking-btn:hover { opacity: 0.85; }
+
+    .booking-banner {
+      background: linear-gradient(135deg, #fff8f3, #e0edf2);
+      border: 1.5px solid #5d8fa3;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin: 8px 0 16px;
+      text-align: center;
+    }
+    .booking-banner h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1c2b35;
+      margin-bottom: 4px;
+    }
+    .booking-banner p {
+      font-size: 11px;
+      color: #4a6070;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .booking-banner-btn {
+      display: inline-block;
+      padding: 8px 20px;
+      background: linear-gradient(135deg, #5d8fa3, #3d7080);
+      color: white;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .booking-banner-btn:hover { opacity: 0.85; }
+
+    #checklist-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 100;
+    }
+
+    #checklist-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 340px;
+      max-width: 95vw;
+      height: 100%;
+      background: white;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.12);
+      display: flex;
+      flex-direction: column;
+    }
+
+    #checklist-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #d5e5eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #checklist-header h3 {
+      font-size: 16px;
+      color: #1c2b35;
+    }
+
+    #checklist-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #4a7a8a;
+    }
+
+    #checklist-progress-bar-wrap {
+      padding: 12px 20px;
+      background: #f0f4f6;
+      border-bottom: 1px solid #d5e5eb;
+    }
+
+    #checklist-progress-label {
+      font-size: 12px;
+      color: #4a6070;
+      margin-bottom: 6px;
+    }
+
+    #checklist-progress-bar {
+      height: 8px;
+      background: #d5e5eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    #checklist-progress-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #5d8fa3, #3d7080);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    #checklist-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 20px;
+    }
+
+    .checklist-category {
+      margin-bottom: 20px;
+    }
+
+    .checklist-category-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #5d8fa3;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #d5e5eb;
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 4px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+
+    .checklist-item:hover { background: #e0edf2; }
+
+    .checklist-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #5d8fa3;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checklist-item label {
+      font-size: 13px;
+      color: #1c2b35;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+
+    .checklist-item.done label {
+      text-decoration: line-through;
+      color: #7a9aaa;
+    }
+
+    .task-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .badge-video    { background: #fff3e0; color: #e65100; }
+    .badge-submit   { background: #e3f2fd; color: #1565c0; }
+    .badge-practice { background: #e8f5e9; color: #2e7d32; }
+    .badge-template { background: #f3e5f5; color: #6a1b9a; }
+    .badge-ai       { background: #e0f7fa; color: #00695c; }
+
+    .task-hint {
+      font-size: 11px;
+      color: #4a7a8a;
+      margin-top: 2px;
+    }
+
+    .task-label-wrap {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .checklist-month-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 6px 0;
+      margin-top: 4px;
+    }
+
+    .checklist-month-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #2c4a58;
+    }
+
+    .month-progress-text {
+      font-size: 11px;
+      color: #4a7a8a;
+    }
+
+    .month-progress-bar {
+      height: 4px;
+      background: #d5e5eb;
+      border-radius: 2px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .month-progress-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #5d8fa3, #3d7080);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    .task-links {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .task-link-btn {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      border: 1px solid #ccd8de;
+      background: white;
+      color: #3d7080;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.15s;
+    }
+
+    .task-link-btn:hover {
+      background: #e0edf2;
+      border-color: #5d8fa3;
+      color: #5d8fa3;
+    }
+
+    #setup-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .welcome-card {
+      background: white;
+      border-radius: 20px;
+      padding: 48px 40px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .welcome-icon { font-size: 56px; margin-bottom: 16px; }
+
+    .welcome-card h2 {
+      color: #1c2b35;
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .welcome-card p {
+      color: #4a6070;
+      font-size: 14px;
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    .select-label {
+      font-size: 13px;
+      color: #4a6070;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+
+    #welcome-select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #ccd8de;
+      border-radius: 12px;
+      background: #f0f4f6;
+      color: #1c2b35;
+      font-size: 15px;
+      margin-bottom: 16px;
+      outline: none;
+    }
+
+    #welcome-select:focus { border-color: #5d8fa3; }
+
+    #start-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #5d8fa3, #3d7080);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #start-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    #start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    #chat-screen {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message {
+      display: flex;
+      gap: 10px;
+      max-width: 85%;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .ai-avatar { background: linear-gradient(135deg, #e0edf2, #c5d8e8); }
+    .user-avatar { background: linear-gradient(135deg, #b8d4e8, #9abdd0); }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .message.ai .bubble {
+      background: white;
+      color: #1c2b35;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .message.user .bubble {
+      background: linear-gradient(135deg, #5d8fa3, #3d7080);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 14px 18px;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background: #5d8fa3;
+      border-radius: 50%;
+      animation: typing 1.2s ease-in-out infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-8px); opacity: 1; }
+    }
+
+    #input-area {
+      background: white;
+      border-top: 1px solid #d5e5eb;
+      padding: 16px 20px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    #message-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1.5px solid #ccd8de;
+      border-radius: 20px;
+      resize: none;
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 1.5;
+      max-height: 120px;
+      outline: none;
+      color: #1c2b35;
+      background: #f0f4f6;
+      transition: border-color 0.2s;
+    }
+
+    #message-input:focus { border-color: #5d8fa3; }
+    #message-input::placeholder { color: #7a9aaa; }
+
+    #send-btn {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #5d8fa3, #3d7080);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    #send-btn:hover { opacity: 0.9; transform: scale(1.05); }
+    #send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* 使い方モーダル */
+    #howto-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #howto-modal.open { display: flex; }
+
+    #howto-box {
+      background: white;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 480px;
+      padding: 32px 28px 24px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+      text-align: center;
+    }
+
+    #howto-box h2 {
+      font-size: 20px;
+      color: #1c2b35;
+      margin-bottom: 6px;
+    }
+
+    #howto-box .subtitle {
+      font-size: 13px;
+      color: #4a6070;
+      margin-bottom: 28px;
+    }
+
+    .howto-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 28px;
+      text-align: left;
+    }
+
+    .howto-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: #f0f4f6;
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+
+    .howto-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .howto-step-text h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1c2b35;
+      margin-bottom: 3px;
+    }
+
+    .howto-step-text p {
+      font-size: 12px;
+      color: #4a6070;
+      line-height: 1.6;
+    }
+
+    #howto-close-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #5d8fa3, #3d7080);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #howto-close-btn:hover { opacity: 0.9; }
+
+    #image-btn {
+      width: 44px;
+      height: 44px;
+      background: white;
+      border: 1.5px solid #ccd8de;
+      border-radius: 50%;
+      color: #4a7a8a;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    #image-btn:hover { border-color: #5d8fa3; background: #e0edf2; }
+
+    #image-preview-wrap {
+      padding: 8px 20px 0;
+      display: none;
+    }
+    #image-preview {
+      max-height: 80px;
+      border-radius: 10px;
+      border: 1.5px solid #ccd8de;
+    }
+    #image-remove {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 12px;
+      color: #c0392b;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Photelier <span>Academy</span> AI</div>
+  <div id="student-select-area" style="display:none">
+    <label>受講生：</label>
+    <select id="header-select" onchange="changeStudent()"></select>
+    <span id="daily-counter"></span>
+    <button id="checklist-btn" onclick="openChecklist()">📋 課題リスト</button>
+    <a id="booking-btn" href="https://sub.photelier-academy.com/event/fLms6F9jtGPz/register" target="_blank">📅 個別セッション予約</a>
+    <button id="reset-btn" onclick="resetConversation()">🔄 リセット</button>
+  </div>
+</header>
+
+<!-- 使い方モーダル -->
+<div id="howto-modal">
+  <div id="howto-box">
+    <h2>📸 AIサポートの使い方</h2>
+    <p class="subtitle">3つのステップで課題を進めていこう！</p>
+    <div class="howto-steps">
+      <div class="howto-step">
+        <div class="howto-icon">📋</div>
+        <div class="howto-step-text">
+          <h3>① 課題リストで今やることを確認</h3>
+          <p>右上の「📋 課題リスト」を開くと月ごとの課題が一覧で見れるよ。動画リンクやテンプレートもここから開けるよ！</p>
+        </div>
+      </div>
+      <div class="howto-step">
+        <div class="howto-icon">💬</div>
+        <div class="howto-step-text">
+          <h3>② 分からないことはAIに相談・提出</h3>
+          <p>課題で詰まったらチャットで気軽に相談してね😊「📝提出」マークの課題は、作ったものをこのチャットに書いて送るよ。画像は🖼️ボタンから送れるよ！</p>
+        </div>
+      </div>
+      <div class="howto-step">
+        <div class="howto-icon">✅</div>
+        <div class="howto-step-text">
+          <h3>③ 完了したらチェックリストにチェック</h3>
+          <p>AIにOKをもらったら課題リストにチェックを入れよう。さちえ先生があなたの進捗を確認できるよ！</p>
+        </div>
+      </div>
+    </div>
+    <button id="howto-close-btn" onclick="closeHowto()">さっそくはじめる →</button>
+  </div>
+</div>
+
+<!-- 課題チェックリストパネル -->
+<div id="checklist-overlay" onclick="closeChecklist()">
+  <div id="checklist-panel" onclick="event.stopPropagation()">
+    <div id="checklist-header">
+      <h3>📋 SNS集客コース 課題リスト</h3>
+      <button id="checklist-close" onclick="closeChecklist()">✕</button>
+    </div>
+    <div id="checklist-progress-bar-wrap">
+      <div id="checklist-progress-label">完了：0 / 37 件</div>
+      <div id="checklist-progress-bar">
+        <div id="checklist-progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <div id="checklist-body"></div>
+  </div>
+</div>
+
+<!-- セットアップ画面 -->
+<div id="setup-screen">
+  <div class="welcome-card">
+    <div class="welcome-icon">📸</div>
+    <h2>さちえ先生のAIサポート</h2>
+    <p>写真・SNS集客の課題についていつでも相談できます✨<br>まずはあなたのお名前を選んでください。</p>
+    <div class="select-label">お名前を選んでください</div>
+    <select id="welcome-select">
+      <option value="">-- 選択してください --</option>
+    </select>
+    <button id="start-btn" onclick="startChat()" disabled>チャットをはじめる →</button>
+  </div>
+</div>
+
+<!-- チャット画面 -->
+<div id="chat-screen">
+  <div id="messages"></div>
+  <div id="image-preview-wrap">
+    <img id="image-preview" src="" alt="プレビュー">
+    <span id="image-remove" onclick="removeImage()">✕ 削除</span>
+  </div>
+  <div id="input-area">
+    <input type="file" id="image-input" accept="image/*" style="display:none" onchange="handleImageSelect(event)">
+    <button id="image-btn" onclick="document.getElementById('image-input').click()" title="画像を送る">🖼️</button>
+    <textarea id="message-input" placeholder="メッセージを入力してください..." rows="1"
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button id="send-btn" onclick="sendMessage()">↑</button>
+  </div>
+</div>
+
+<script>
+  let currentStudent = '';
+  let isLoading = false;
+  let selectedImage = null;     // { base64, type }
+
+
+  // 受講生リストを取得
+  fetch('/api/students')
+    .then(r => r.json())
+    .then(data => {
+      const sel1 = document.getElementById('welcome-select');
+      const sel2 = document.getElementById('header-select');
+      data.students.forEach(name => {
+        sel1.innerHTML += `<option value="${name}">${name}</option>`;
+        sel2.innerHTML += `<option value="${name}">${name}</option>`;
+      });
+      sel1.addEventListener('change', () => {
+        document.getElementById('start-btn').disabled = !sel1.value;
+      });
+    });
+
+  function closeHowto() {
+    document.getElementById('howto-modal').classList.remove('open');
+    document.getElementById('message-input').focus();
+  }
+
+  async function updateDailyCounter(name) {
+    try {
+      const res = await fetch(`/api/status/${encodeURIComponent(name)}`);
+      const data = await res.json();
+      const counter = document.getElementById('daily-counter');
+      if (data.is_expired) {
+        counter.textContent = '⛔ サポート期間終了';
+        counter.style.color = '#c0392b';
+      } else {
+        counter.textContent = `💬 今月残り ${data.monthly_remaining}/${data.monthly_limit} 件`;
+        counter.style.color = data.monthly_remaining <= 20 ? '#e67e22' : '#4a7a8a';
+      }
+    } catch {}
+  }
+
+  async function startChat() {
+    const sel = document.getElementById('welcome-select');
+    if (!sel.value) return;
+    currentStudent = sel.value;
+    document.getElementById('header-select').value = currentStudent;
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('chat-screen').style.display = 'flex';
+    document.getElementById('student-select-area').style.display = 'flex';
+
+    updateDailyCounter(currentStudent);
+    await loadProgress();
+    addMessage('ai', `こんにちは！${currentStudent}さん😊\nPhotelier AcademyのAIサポートです！\n\n写真の課題でも、SNS集客でも、なんでも気軽に相談してね✨\n今日はどんなことで詰まってる？`);
+    document.getElementById('howto-modal').classList.add('open');
+  }
+
+  function changeStudent() {
+    currentStudent = document.getElementById('header-select').value;
+    document.getElementById('messages').innerHTML = '';
+    updateDailyCounter(currentStudent);
+    addMessage('ai', `こんにちは！${currentStudent}さん😊\nPhotelier AcademyのAIサポートです！\n\n今日はどんなことで相談したい？`);
+  }
+
+  function addImageMessage(base64, type, text) {
+    const messages = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'message user';
+    div.innerHTML = `
+      <div class="avatar user-avatar">👤</div>
+      <div class="bubble" style="padding:8px">
+        <img src="data:${type};base64,${base64}" style="max-width:200px;border-radius:8px;display:block;margin-bottom:${text?'6px':'0'}">
+        ${text ? `<span>${escapeHtml(text)}</span>` : ''}
+      </div>
+    `;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function addMessage(role, text) {
+    const messages = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+    div.innerHTML = `
+      <div class="avatar ${role}-avatar">${role === 'ai' ? '📸' : '👤'}</div>
+      <div class="bubble">${escapeHtml(text)}</div>
+    `;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    const messages = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'message ai';
+    div.id = 'typing-indicator';
+    div.innerHTML = `
+      <div class="avatar ai-avatar">📸</div>
+      <div class="bubble typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    `;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    if (!text || isLoading || !currentStudent) return;
+
+    input.value = '';
+    autoResize(input);
+    isLoading = true;
+    document.getElementById('send-btn').disabled = true;
+
+    if (selectedImage) {
+      addImageMessage(selectedImage.base64, selectedImage.type, text);
+    } else {
+      addMessage('user', text);
+    }
+    showTyping();
+
+    try {
+      const payload = { student_name: currentStudent, message: text };
+      if (selectedImage) {
+        payload.image = selectedImage.base64;
+        payload.image_type = selectedImage.type;
+        removeImage();
+      }
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      removeTyping();
+
+      const messages = document.getElementById('messages');
+      const div = document.createElement('div');
+      div.className = 'message ai';
+      div.innerHTML = `<div class="avatar ai-avatar">📸</div><div class="bubble" id="current-response"></div>`;
+      messages.appendChild(div);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.text) {
+                fullText += data.text;
+                document.getElementById('current-response').textContent = fullText;
+                messages.scrollTop = messages.scrollHeight;
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch (e) {
+      removeTyping();
+      addMessage('ai', 'ごめんなさい、エラーが起きました。もう一度試してね😊');
+    }
+
+    isLoading = false;
+    document.getElementById('send-btn').disabled = false;
+    updateDailyCounter(currentStudent);
+    input.focus();
+  }
+
+  async function resetConversation() {
+    if (!confirm(`${currentStudent}さんとの会話履歴をリセットしますか？`)) return;
+    await fetch('/api/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student_name: currentStudent })
+    });
+    document.getElementById('messages').innerHTML = '';
+    addMessage('ai', `会話をリセットしました😊\nまた一から相談してね！`);
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function handleImageSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      const base64 = dataUrl.split(',')[1];
+      selectedImage = { base64, type: file.type };
+      document.getElementById('image-preview').src = dataUrl;
+      document.getElementById('image-preview-wrap').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  function removeImage() {
+    selectedImage = null;
+    document.getElementById('image-preview-wrap').style.display = 'none';
+    document.getElementById('image-preview').src = '';
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  const BOOKING_URL = 'https://sub.photelier-academy.com/event/fLms6F9jtGPz/register';
+
+  // 月ごとの予約バナー設定
+  const BOOKING_BANNERS = {
+    "2ヶ月目": {
+      session: "1回目",
+      message: "ペルソナ・コンセプト設計が完了したら\n1回目の個別セッションを予約しよう！",
+    },
+    "3ヶ月目": {
+      session: "2回目",
+      message: "BEカリキュラム・FEカリキュラムが完了したら\n2回目の個別セッションを予約しよう！",
+    },
+    "4ヶ月目": {
+      session: "3回目",
+      message: "FE LP・提案書が完了したら\nクロージング前に3回目の個別セッションを予約しよう！",
+    },
+  };
+
+  const BADGE = {
+    video:    { label: "📹 動画", cls: "badge-video" },
+    submit:   { label: "📝 提出", cls: "badge-submit" },
+    practice: { label: "✅ 実践", cls: "badge-practice" },
+    template: { label: "🎨 テンプレ", cls: "badge-template" },
+    ai:       { label: "🤖 AI相談", cls: "badge-ai" },
+  };
+
+  const CURRICULUM = [
+    { month: "1ヶ月目", tasks: [
+      { name: "世界観イメージマップ作成",        type: "template", hint: "完成したらスクリーンショット📸をチャットに送ってね",
+        links: [
+          { label: "▶ 動画", url: "https://vimeo.com/1061105544/200a70832f" },
+          { label: "🎨 テンプレ", url: "https://www.canva.com/design/DAF3Ma57Do4/IGsFyOs9YLeI6Es17UPStA/view" }
+        ] },
+      { name: "現状分析",                        type: "submit",   hint: "AIサポートと一緒に進めよう" },
+      { name: "マーケティング全体像の把握",      type: "video",    hint: "動画を見る",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/manage/videos/1143041543/bf9d8ced75" }] },
+      { name: "ブランディングとマーケティングの違い", type: "video", hint: "動画を見る",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1148047603/267cd0f902" }] },
+      { name: "売れる市場",                      type: "video",    hint: "動画を見る",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1143044424/bcc18fab5b" }] },
+      { name: "ペルソナ設定",                    type: "submit",   hint: "動画を見てAIサポートに提出",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1143047013/73336d5b46" }] },
+      { name: "発信の本質",                      type: "practice", hint: "動画を見て発信をはじめる",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1143270042/f0804f82f8" }] },
+      { name: "フォロワーの増やし方",            type: "practice", hint: "動画を見て発信をはじめる",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1148061448/3491ff79da" }] },
+    ]},
+    { month: "2ヶ月目", tasks: [
+      { name: "悩み出し",                        type: "submit",   hint: "100個書き出してAIサポートに提出" },
+      { name: "解決策",                          type: "submit",   hint: "動画を見てAIサポートに提出",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1148009088/2327c6c67f" }] },
+      { name: "リサーチ・モデリング",            type: "submit",   hint: "動画を見てAIサポートに提出",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1143264618/4e4072e15c" }] },
+      { name: "コンセプト設計",                  type: "submit",   hint: "動画を見てAIサポートに提出",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1143051495/fb61d7014e" }] },
+      { name: "インスタプロフィール",            type: "submit",   hint: "動画を見てAIサポートに提出",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1143054115/8eb7b641d0" }] },
+      { name: "インスタアイコン",                type: "practice", hint: "整える" },
+      { name: "発信ネタ出し・7つの型",           type: "practice", hint: "動画を見て実践",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1143270964/28ffdc0649" }] },
+      { name: "5つの発信テンプレート",           type: "practice", hint: "動画を見て実践",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1144392445/304544d478" }] },
+      { name: "ストーリーズ投稿",                type: "practice", hint: "動画を見て実践",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1148058561/b79a22ea00" }] },
+      { name: "LINE公式開設",                    type: "practice", hint: "LINE公式アカウントを開設する",
+        links: [{ label: "🔗 開設はこちら", url: "https://entry.line.biz/start/jp/" }] },
+      { name: "インスタにリンクを設定",          type: "practice", hint: "インスタのプロフィールにLINEリンクを設定" },
+      { name: "CTAを整える",                     type: "practice", hint: "実践" },
+    ]},
+    { month: "3ヶ月目", tasks: [
+      { name: "講座タイトル",                    type: "submit",   hint: "考えてAIサポートに提出" },
+      { name: "BEカリキュラム",                  type: "submit",   hint: "AIサポートと一緒に作ろう" },
+      { name: "FE",                              type: "practice", hint: "動画を見て実践",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1148015557/902654269f" }] },
+      { name: "FEカリキュラム",                  type: "submit",   hint: "考えてAIサポートに提出" },
+      { name: "ハイライト",                      type: "practice", hint: "動画を見て実践",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1148060304/421928f7eb" }] },
+      { name: "リール作成",                      type: "practice", hint: "動画を見て実践",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1143272914/93282708ff" }] },
+      { name: "リール撮影の仕方",                type: "practice", hint: "動画を見て実践",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1161681117/870ac51a8f" }] },
+      { name: "インスタライブ",                  type: "practice", hint: "フォロワー1000人〜挑戦！AIに相談してね" },
+      { name: "LINEプレゼント作成",              type: "ai",       hint: "AIに相談しながら作成" },
+      { name: "LINE教育配信",                    type: "practice", hint: "実践" },
+    ]},
+    { month: "4ヶ月目", tasks: [
+      { name: "提案書作成",                      type: "template", hint: "完成したらCanvaの共有リンクをチャットに貼ってね",
+        links: [{ label: "🎨 テンプレ", url: "https://www.canva.com/design/DAG79dRPiEo/E6t32UIuvNKSUqoeutaMlQ/view" }] },
+      { name: "FE LP作成",                       type: "practice", hint: "動画を見てClaudeCodeで実践",
+        links: [
+          { label: "▶ 動画", url: "https://vimeo.com/1179772470/45e8156ecc" },
+          { label: "💻 ClaudeCodeDL", url: "https://claude.ai/download" }
+        ] },
+      { name: "満席を作るLINE告知文",            type: "practice", hint: "動画を見て実践",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1144424590/fa4e4161f6" }] },
+    ]},
+    { month: "5ヶ月目", tasks: [
+      { name: "クロージング",                    type: "practice", hint: "動画を見て実践",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1148030540/8acd2a09d6" }] },
+      { name: "マインド",                        type: "video",    hint: "動画を見る",
+        links: [{ label: "▶ 動画", url: "https://vimeo.com/1148039639/1ed57a291c" }] },
+    ]},
+    { month: "6ヶ月目", tasks: [
+      { name: "ミッション・ビジョン",            type: "submit",   hint: "AIサポートと一緒に作ろう" },
+      { name: "グランドルール設定",              type: "submit",   hint: "AIサポートと一緒に作ろう" },
+    ]},
+  ];
+
+  const ALL_TASKS = CURRICULUM.flatMap(m => m.tasks.map(t => t.name));
+
+  let completedTasks = [];
+
+  function openChecklist() {
+    document.getElementById('checklist-overlay').style.display = 'block';
+    renderChecklist();
+  }
+
+  function closeChecklist() {
+    document.getElementById('checklist-overlay').style.display = 'none';
+  }
+
+  async function loadProgress() {
+    if (!currentStudent) return;
+    try {
+      const res = await fetch(`/api/progress/${encodeURIComponent(currentStudent)}`);
+      const data = await res.json();
+      completedTasks = data.completed || [];
+    } catch { completedTasks = []; }
+  }
+
+  async function saveProgress() {
+    await fetch('/api/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student_name: currentStudent, completed: completedTasks })
+    });
+  }
+
+  function renderChecklist() {
+    const body = document.getElementById('checklist-body');
+    body.innerHTML = '';
+    const total = ALL_TASKS.length;
+
+    for (const monthData of CURRICULUM) {
+      const monthDone = monthData.tasks.filter(t => completedTasks.includes(t.name)).length;
+      const monthTotal = monthData.tasks.length;
+      const monthPct = Math.round(monthDone / monthTotal * 100);
+
+      const section = document.createElement('div');
+      section.className = 'checklist-category';
+      section.innerHTML = `
+        <div class="checklist-month-header">
+          <span class="checklist-month-title">📅 ${monthData.month}</span>
+          <span class="month-progress-text">${monthDone}/${monthTotal}</span>
+        </div>
+        <div class="month-progress-bar">
+          <div class="month-progress-fill" style="width:${monthPct}%" id="mbar-${monthData.month}"></div>
+        </div>
+      `;
+
+      for (const task of monthData.tasks) {
+        const done = completedTasks.includes(task.name);
+        const badge = BADGE[task.type];
+        const item = document.createElement('div');
+        item.className = `checklist-item${done ? ' done' : ''}`;
+        const id = `task-${task.name}`;
+        const linksHtml = (task.links || []).map(l =>
+          `<a class="task-link-btn" href="${l.url}" target="_blank" onclick="event.stopPropagation()">${l.label}</a>`
+        ).join('');
+
+        item.innerHTML = `
+          <input type="checkbox" id="${id}" ${done ? 'checked' : ''}>
+          <div class="task-label-wrap">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <label for="${id}" style="margin:0">${task.name}</label>
+              <span class="task-badge ${badge.cls}">${badge.label}</span>
+            </div>
+            <div class="task-hint">${task.hint}</div>
+            ${linksHtml ? `<div class="task-links">${linksHtml}</div>` : ''}
+          </div>
+        `;
+        item.querySelector('input').addEventListener('change', async (e) => {
+          if (e.target.checked) {
+            if (!completedTasks.includes(task.name)) completedTasks.push(task.name);
+            item.classList.add('done');
+          } else {
+            completedTasks = completedTasks.filter(t => t !== task.name);
+            item.classList.remove('done');
+          }
+          updateProgressBar();
+          await saveProgress();
+        });
+        section.appendChild(item);
+      }
+      body.appendChild(section);
+
+      // 予約バナーを該当月の後に追加
+      if (BOOKING_BANNERS[monthData.month]) {
+        const banner = BOOKING_BANNERS[monthData.month];
+        const bannerEl = document.createElement('div');
+        bannerEl.className = 'booking-banner';
+        bannerEl.innerHTML = `
+          <h4>📅 個別セッション（${banner.session}）のタイミング！</h4>
+          <p>${banner.message.replace(/\n/g, '<br>')}</p>
+          <a class="booking-banner-btn" href="${BOOKING_URL}" target="_blank">予約はこちら →</a>
+        `;
+        body.appendChild(bannerEl);
+      }
+    }
+    updateProgressBar();
+  }
+
+  function updateProgressBar() {
+    const total = ALL_TASKS.length;
+    const count = completedTasks.length;
+    const pct = total > 0 ? Math.round(count / total * 100) : 0;
+    document.getElementById('checklist-progress-label').textContent = `全体の進捗：${count} / ${total} 件（${pct}%）`;
+    document.getElementById('checklist-progress-fill').style.width = `${pct}%`;
+
+    // 月ごとのバーも更新
+    for (const monthData of CURRICULUM) {
+      const bar = document.getElementById(`mbar-${monthData.month}`);
+      if (!bar) continue;
+      const monthDone = monthData.tasks.filter(t => completedTasks.includes(t.name)).length;
+      const monthPct = Math.round(monthDone / monthData.tasks.length * 100);
+      bar.style.width = `${monthPct}%`;
+      const header = bar.closest('.checklist-category').querySelector('.month-progress-text');
+      if (header) header.textContent = `${monthDone}/${monthData.tasks.length}`;
+    }
+  }
+</script>
+</body>
+</html>
