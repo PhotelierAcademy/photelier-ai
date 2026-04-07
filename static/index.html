@@ -1466,11 +1466,14 @@
   function renderRoadmap() {
     const timeline = document.getElementById('roadmap-timeline');
     if (!timeline) return;
+    // タイトルを動的に更新
+    const roadmapTitle = document.querySelector('#roadmap h4');
+    if (roadmapTitle) roadmapTitle.textContent = `📍 ${courseMonths}ヶ月ロードマップ`;
 
-    // 6ヶ月コース用
+    // 6ヶ月コース用（3回）
     const sessionBadges6 = { 2: '📅 個別①', 4: '📅 個別②', 5: '📅 個別③' };
-    // 8ヶ月コース用
-    const sessionBadges8 = { 2: '📅 個別①', 4: '📅 個別②', 7: '📅 個別③' };
+    // 8ヶ月コース用（6回）
+    const sessionBadges8 = { 1: '📅 個別①', 2: '📅 個別②', 3: '📅 個別③', 5: '📅 個別④', 6: '📅 個別⑤', 8: '📅 個別⑥' };
     const sessionBadges = courseMonths === 8 ? sessionBadges8 : sessionBadges6;
 
     // 現在の月を判定（完了してない最初の月）
