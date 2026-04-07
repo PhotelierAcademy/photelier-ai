@@ -322,11 +322,25 @@ async def get_status(student_name: str):
         end_dt = datetime.strptime(end_date, "%Y-%m-%d")
         is_expired = datetime.now() > end_dt
 
+    course_months = 6
+    if student_info and student_info.get("course_months"):
+        course_months = student_info["course_months"]
+
+    sessions_remaining = None
+    sessions_deadline = None
+    if student_info and student_info.get("sessions_remaining") is not None:
+        sessions_remaining = student_info["sessions_remaining"]
+    if student_info and student_info.get("sessions_deadline"):
+        sessions_deadline = student_info["sessions_deadline"]
+
     return {
         "monthly_remaining": remaining,
         "monthly_limit": MONTHLY_LIMIT,
         "end_date": end_date,
-        "is_expired": is_expired
+        "is_expired": is_expired,
+        "course_months": course_months,
+        "sessions_remaining": sessions_remaining,
+        "sessions_deadline": sessions_deadline
     }
 
 @app.post("/api/chat")

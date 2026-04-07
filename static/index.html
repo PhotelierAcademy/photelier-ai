@@ -766,6 +766,7 @@
     <label>受講生：</label>
     <select id="header-select" onchange="changeStudent()"></select>
     <span id="daily-counter"></span>
+    <span id="session-counter" style="display:none; font-size:12px; color:#5d8fa3; background:#e8f4f8; padding:4px 10px; border-radius:20px; margin-left:4px;"></span>
     <button id="checklist-btn" onclick="openChecklist()">📋 課題リスト</button>
     <a id="booking-btn" href="https://sub.photelier-academy.com/event/fLms6F9jtGPz/register" target="_blank">📅 個別セッション予約</a>
     <button id="reset-btn" onclick="resetConversation()">🔄 リセット</button>
@@ -859,6 +860,7 @@
   let currentStudent = '';
   let isLoading = false;
   let selectedImage = null;     // { base64, type }
+  let courseMonths = 6;         // コース期間（デフォルト6ヶ月）
 
 
   // 受講生リストを取得
@@ -892,6 +894,31 @@
       } else {
         counter.textContent = `💬 今月残り ${data.monthly_remaining}/${data.monthly_limit} 件`;
         counter.style.color = data.monthly_remaining <= 20 ? '#e67e22' : '#4a7a8a';
+      }
+      // コース期間を更新してロードマップを再描画
+      if (data.course_months) {
+        courseMonths = data.course_months;
+        renderRoadmap();
+      }
+      // 個別セッション残り回数を表示
+      const sessionCounter = document.getElementById('session-counter');
+      if (sessionCounter) {
+        if (data.sessions_remaining !== null && data.sessions_remaining !== undefined) {
+          let sessionText = `📅 個別セッション残り ${data.sessions_remaining}回`;
+          if (data.sessions_deadline) {
+            const dl = new Date(data.sessions_deadline);
+            const dlStr = `${dl.getMonth()+1}/${dl.getDate()}`;
+            sessionText += `（${dlStr}まで）`;
+            // 期限が近い（2週間以内）場合は色を変える
+            const daysLeft = Math.ceil((dl - new Date()) / (1000*60*60*24));
+            sessionCounter.style.color = daysLeft <= 14 ? '#e67e22' : '#5d8fa3';
+            sessionCounter.style.background = daysLeft <= 14 ? '#fef5e7' : '#e8f4f8';
+          }
+          sessionCounter.textContent = sessionText;
+          sessionCounter.style.display = 'inline';
+        } else {
+          sessionCounter.style.display = 'none';
+        }
       }
     } catch {}
   }
@@ -1244,7 +1271,13 @@
   function renderRoadmap() {
     const timeline = document.getElementById('roadmap-timeline');
     if (!timeline) return;
-    const sessionBadges = { 2: '📅 個別①', 4: '📅 個別②', 5: '📅 個別③' };
+
+    // 6ヶ月コース用
+    const sessionBadges6 = { 2: '📅 個別①', 4: '📅 個別②', 5: '📅 個別③' };
+    // 8ヶ月コース用
+    const sessionBadges8 = { 2: '📅 個別①', 4: '📅 個別②', 7: '📅 個別③' };
+    const sessionBadges = courseMonths === 8 ? sessionBadges8 : sessionBadges6;
+
     // 現在の月を判定（完了してない最初の月）
     let currentMonthIdx = CURRICULUM.length;
     for (let i = 0; i < CURRICULUM.length; i++) {
@@ -1252,10 +1285,18 @@
       const monthDone = monthTasks.filter(t => completedTasks.includes(t)).length;
       if (monthDone < monthTasks.length) { currentMonthIdx = i; break; }
     }
-    timeline.innerHTML = CURRICULUM.map((m, i) => {
-      const monthNum = i + 1;
-      const isDone = i < currentMonthIdx;
-      const isCurrent = i === currentMonthIdx;
+
+    // 基本6ヶ月 + 8ヶ月の場合は追加月を表示
+    const months = [...CURRICULUM.map((m, i) => ({ label: m.month, idx: i }))];
+    if (courseMonths === 8) {
+      months.push({ label: '7ヶ月目', idx: 6, extra: true });
+      months.push({ label: '8ヶ月目', idx: 7, extra: true });
+    }
+
+    timeline.innerHTML = months.map(({ label, idx, extra }) => {
+      const monthNum = idx + 1;
+      const isDone = !extra && idx < currentMonthIdx;
+      const isCurrent = !extra && idx === currentMonthIdx;
       const cls = isDone ? 'done' : (isCurrent ? 'current' : '');
       const badge = sessionBadges[monthNum] ? `<div class="roadmap-session-badge">${sessionBadges[monthNum]}</div>` : '';
       const icon = isDone ? '✓' : monthNum;
