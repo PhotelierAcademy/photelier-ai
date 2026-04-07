@@ -909,6 +909,64 @@
       color: #c0392b;
       cursor: pointer;
     }
+
+    /* ===== スマホ対応 ===== */
+    @media (max-width: 640px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px 14px;
+        gap: 8px;
+      }
+
+      .logo { font-size: 16px; }
+
+      #student-select-area {
+        flex-wrap: wrap;
+        margin-left: 0;
+        gap: 6px;
+        width: 100%;
+      }
+
+      #student-select-area label { display: none; }
+
+      select {
+        font-size: 12px;
+        padding: 5px 10px;
+        max-width: 130px;
+      }
+
+      #daily-counter {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+
+      #session-counter {
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+        margin-left: 0 !important;
+      }
+
+      #checklist-btn {
+        font-size: 11px;
+        padding: 5px 10px;
+      }
+
+      #submit-btn {
+        font-size: 11px;
+        padding: 5px 10px;
+      }
+
+      #booking-btn {
+        font-size: 11px;
+        padding: 5px 10px;
+      }
+
+      #reset-btn {
+        font-size: 11px;
+        padding: 5px 10px;
+      }
+    }
   </style>
 </head>
 <body>
