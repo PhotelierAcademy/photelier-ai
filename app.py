@@ -500,4 +500,45 @@ async def reset_conversation(request: ResetRequest):
         print(f"❌ リセットエラー: {e}")
     return {"status": "ok"}
 
+class SubmissionRequest(BaseModel):
+    student_name: str
+    assignment_name: str
+    content: str
+    image: Optional[str] = None
+    url: Optional[str] = None
+
+@app.post("/api/submit")
+async def submit_assignment(request: SubmissionRequest):
+    try:
+        supabase.table("submissions").insert({
+            "student_name": request.student_name,
+            "assignment_name": request.assignment_name,
+            "content": request.content,
+            "image_data": request.image,
+            "url": request.url,
+            "submitted_at": datetime.now().isoformat()
+        }).execute()
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"❌ 提出エラー: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/submissions/{student_name}")
+async def get_submissions(student_name: str):
+    try:
+        result = supabase.table("submissions").select("*").eq("student_name", student_name).order("submitted_at", desc=True).execute()
+        return {"submissions": result.data}
+    except Exception as e:
+        print(f"❌ 提出物取得エラー: {e}")
+        return {"submissions": []}
+
+@app.get("/api/all-submissions")
+async def get_all_submissions():
+    try:
+        result = supabase.table("submissions").select("*").order("submitted_at", desc=True).execute()
+        return {"submissions": result.data}
+    except Exception as e:
+        print(f"❌ 全提出物取得エラー: {e}")
+        return {"submissions": []}
+
 app.mount("/static", StaticFiles(directory="static"), name="static")

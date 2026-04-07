@@ -109,6 +109,159 @@
     }
     #booking-btn:hover { opacity: 0.85; }
 
+    #submit-btn {
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #e8a87c, #d47c4a);
+      border: none;
+      border-radius: 20px;
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #submit-btn:hover { opacity: 0.85; }
+
+    /* 課題提出モーダル */
+    #submit-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #submit-overlay.open { display: flex; }
+    #submit-modal {
+      background: white;
+      border-radius: 18px;
+      padding: 28px;
+      width: 480px;
+      max-width: 95vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    }
+    #submit-modal h3 {
+      font-size: 17px;
+      color: #1c2b35;
+      margin-bottom: 18px;
+    }
+    .submit-field {
+      margin-bottom: 16px;
+    }
+    .submit-field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #3a5a6a;
+      margin-bottom: 6px;
+    }
+    .submit-field label .optional {
+      font-weight: 400;
+      color: #8aabbf;
+      margin-left: 4px;
+      font-size: 11px;
+    }
+    .submit-field select,
+    .submit-field textarea,
+    .submit-field input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #c8d8e0;
+      border-radius: 10px;
+      font-size: 13px;
+      color: #1c2b35;
+      background: #f8fbfc;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .submit-field select:focus,
+    .submit-field textarea:focus,
+    .submit-field input[type="text"]:focus {
+      border-color: #5d8fa3;
+      background: white;
+    }
+    .submit-field textarea { resize: vertical; min-height: 100px; }
+    #submit-image-preview-wrap {
+      display: none;
+      margin-top: 8px;
+      position: relative;
+      width: fit-content;
+    }
+    #submit-image-preview {
+      max-width: 200px;
+      max-height: 150px;
+      border-radius: 8px;
+      border: 1px solid #c8d8e0;
+    }
+    #submit-image-remove {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #e74c3c;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #submit-image-upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: #f0f4f6;
+      border: 1px dashed #9ab8c5;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #5d8fa3;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #submit-image-upload-btn:hover { background: #e0edf2; }
+    .submit-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+    #submit-cancel-btn {
+      padding: 10px 20px;
+      background: none;
+      border: 1px solid #c8d8e0;
+      border-radius: 20px;
+      color: #4a6070;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #submit-send-btn {
+      padding: 10px 24px;
+      background: linear-gradient(135deg, #e8a87c, #d47c4a);
+      border: none;
+      border-radius: 20px;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #submit-send-btn:hover { opacity: 0.85; }
+    #submit-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #submit-success-msg {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: #27ae60;
+      font-size: 15px;
+    }
+
     .booking-banner {
       background: linear-gradient(135deg, #fff8f3, #e0edf2);
       border: 1.5px solid #5d8fa3;
@@ -768,6 +921,7 @@
     <span id="daily-counter"></span>
     <span id="session-counter" style="display:none; font-size:12px; color:#5d8fa3; background:#e8f4f8; padding:4px 10px; border-radius:20px; margin-left:4px;"></span>
     <button id="checklist-btn" onclick="openChecklist()">📋 課題リスト</button>
+    <button id="submit-btn" onclick="openSubmitModal()">📝 課題を提出する</button>
     <a id="booking-btn" href="https://sub.photelier-academy.com/event/fLms6F9jtGPz/register" target="_blank">📅 個別セッション予約</a>
     <button id="reset-btn" onclick="resetConversation()">🔄 リセット</button>
   </div>
@@ -823,6 +977,47 @@
       <div class="roadmap-timeline" id="roadmap-timeline"></div>
     </div>
     <div id="checklist-body"></div>
+  </div>
+</div>
+
+<!-- 課題提出モーダル -->
+<div id="submit-overlay" onclick="closeSubmitModal()">
+  <div id="submit-modal" onclick="event.stopPropagation()">
+    <h3>📝 課題を提出する</h3>
+    <div id="submit-form-wrap">
+      <div class="submit-field">
+        <label>提出する課題</label>
+        <select id="submit-task-select">
+          <option value="">-- 課題を選んでください --</option>
+        </select>
+      </div>
+      <div class="submit-field">
+        <label>内容<span class="optional">（テキストで書いてね）</span></label>
+        <textarea id="submit-content" placeholder="例：ペルソナ設定の内容を入力してください..."></textarea>
+      </div>
+      <div class="submit-field">
+        <label>画像<span class="optional">（任意）</span></label>
+        <input type="file" id="submit-image-input" accept="image/*" style="display:none" onchange="handleSubmitImageSelect(event)">
+        <div id="submit-image-upload-btn" onclick="document.getElementById('submit-image-input').click()">
+          🖼️ 画像を追加する
+        </div>
+        <div id="submit-image-preview-wrap">
+          <img id="submit-image-preview" src="" alt="プレビュー">
+          <div id="submit-image-remove" onclick="removeSubmitImage()">✕</div>
+        </div>
+      </div>
+      <div class="submit-field">
+        <label>URL<span class="optional">（任意：CanvaリンクなどあればここにペースとしてOK）</span></label>
+        <input type="text" id="submit-url" placeholder="https://...">
+      </div>
+      <div class="submit-actions">
+        <button id="submit-cancel-btn" onclick="closeSubmitModal()">キャンセル</button>
+        <button id="submit-send-btn" onclick="submitAssignment()">提出する ✉️</button>
+      </div>
+    </div>
+    <div id="submit-success-msg">
+      ✅ 提出が完了しました！<br>さちえ先生が確認するね😊
+    </div>
   </div>
 </div>
 
@@ -1381,6 +1576,94 @@
       }
     }
     updateProgressBar();
+  }
+
+  // ---- 課題提出フォーム ----
+
+  function openSubmitModal() {
+    // 提出タスク一覧をリセット＆再構築
+    const sel = document.getElementById('submit-task-select');
+    sel.innerHTML = '<option value="">-- 課題を選んでください --</option>';
+    for (const monthData of CURRICULUM) {
+      for (const task of monthData.tasks) {
+        if (task.type === 'submit' || task.type === 'template' || task.type === 'ai') {
+          const opt = document.createElement('option');
+          opt.value = task.name;
+          opt.textContent = `${monthData.month} ｜ ${task.name}`;
+          sel.appendChild(opt);
+        }
+      }
+    }
+    // フォームをリセット
+    document.getElementById('submit-content').value = '';
+    document.getElementById('submit-url').value = '';
+    removeSubmitImage();
+    document.getElementById('submit-form-wrap').style.display = 'block';
+    document.getElementById('submit-success-msg').style.display = 'none';
+    document.getElementById('submit-send-btn').disabled = false;
+    document.getElementById('submit-overlay').classList.add('open');
+  }
+
+  function closeSubmitModal() {
+    document.getElementById('submit-overlay').classList.remove('open');
+  }
+
+  let selectedSubmitImage = null;
+
+  function handleSubmitImageSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      const base64 = dataUrl.split(',')[1];
+      selectedSubmitImage = { base64, type: file.type };
+      document.getElementById('submit-image-preview').src = dataUrl;
+      document.getElementById('submit-image-preview-wrap').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  function removeSubmitImage() {
+    selectedSubmitImage = null;
+    document.getElementById('submit-image-preview-wrap').style.display = 'none';
+    document.getElementById('submit-image-preview').src = '';
+  }
+
+  async function submitAssignment() {
+    const taskName = document.getElementById('submit-task-select').value;
+    const content = document.getElementById('submit-content').value.trim();
+    if (!taskName) { alert('課題を選んでね！'); return; }
+    if (!content && !selectedSubmitImage) { alert('内容か画像を入力してね！'); return; }
+
+    const btn = document.getElementById('submit-send-btn');
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+
+    try {
+      const payload = {
+        student_name: currentStudent,
+        assignment_name: taskName,
+        content: content,
+        image: selectedSubmitImage ? selectedSubmitImage.base64 : null,
+        url: document.getElementById('submit-url').value.trim() || null
+      };
+      const res = await fetch('/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('送信エラー');
+      // 成功表示
+      document.getElementById('submit-form-wrap').style.display = 'none';
+      document.getElementById('submit-success-msg').style.display = 'block';
+      setTimeout(() => closeSubmitModal(), 2500);
+    } catch (e) {
+      alert('送信に失敗しました。もう一度試してね😢');
+      btn.disabled = false;
+      btn.textContent = '提出する ✉️';
+    }
   }
 
   function updateProgressBar() {
