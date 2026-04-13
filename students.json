@@ -5,7 +5,6 @@
     {"name": "ひろりん", "end_date": "2026-10-05", "sessions_remaining": 2, "sessions_deadline": "2026-07-31"},
     {"name": "ゆきさん", "end_date": "2026-10-31", "course_months": 8, "sessions_remaining": 6, "sessions_deadline": "2026-10-31"},
     {"name": "さちえ先生（テスト）", "end_date": "2099-12-31"},
-    {"name": "岡本さん", "end_date": "2026-11-01", "sessions_remaining": 3, "sessions_deadline": "2026-10-31"},
-    {"name": "カシミエさん", "end_date": "2026-11-01", "sessions_remaining": 3, "sessions_deadline": "2026-10-31"}
+    {"name": "岡本さん", "end_date": "2026-11-01", "sessions_remaining": 3, "sessions_deadline": "2026-10-31"}
   ]
 }
