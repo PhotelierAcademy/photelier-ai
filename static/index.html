@@ -970,7 +970,125 @@
         font-size: 11px;
         padding: 5px 10px;
       }
+
+      #search-btn {
+        font-size: 11px;
+        padding: 5px 10px;
+      }
     }
+
+    /* 検索モーダル */
+    #search-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 300;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 60px 20px 20px;
+    }
+    #search-modal.open { display: flex; }
+    #search-box {
+      background: white;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+    #search-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #d5e5eb;
+      flex-shrink: 0;
+    }
+    #search-header h3 {
+      font-size: 15px;
+      color: #1c2b35;
+      margin-bottom: 10px;
+    }
+    #search-input-wrap {
+      display: flex;
+      gap: 8px;
+    }
+    #search-input {
+      flex: 1;
+      border: 1.5px solid #d5e5eb;
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 14px;
+      outline: none;
+    }
+    #search-input:focus { border-color: #5d8fa3; }
+    #search-go-btn {
+      background: linear-gradient(135deg, #5d8fa3, #3d7080);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #search-close {
+      float: right;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #4a7a8a;
+      margin-top: -28px;
+    }
+    #search-results {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+    }
+    .search-result-item {
+      background: #f8fbfc;
+      border: 1px solid #d5e5eb;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .search-result-role {
+      font-size: 11px;
+      color: #5d8fa3;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .search-result-text {
+      font-size: 13px;
+      color: #2c4a58;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .search-highlight {
+      background: #fff3a3;
+      border-radius: 3px;
+      padding: 0 2px;
+      font-weight: 700;
+    }
+    #search-no-result {
+      text-align: center;
+      padding: 40px;
+      color: #4a7a8a;
+      font-size: 14px;
+    }
+    #search-btn {
+      background: white;
+      border: 1.5px solid #d5e5eb;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #2c4a58;
+      transition: all 0.2s;
+    }
+    #search-btn:hover { background: #e8f4f8; border-color: #5d8fa3; }
   </style>
 </head>
 <body>
@@ -982,12 +1100,30 @@
     <select id="header-select" onchange="changeStudent()"></select>
     <span id="daily-counter"></span>
     <span id="session-counter" style="display:none; font-size:12px; color:#5d8fa3; background:#e8f4f8; padding:4px 10px; border-radius:20px; margin-left:4px;"></span>
+    <button id="search-btn" onclick="openSearch()">🔍 検索</button>
     <button id="checklist-btn" onclick="openChecklist()">📋 課題リスト</button>
     <button id="submit-btn" onclick="openSubmitModal()">📝 課題を提出する</button>
     <a id="booking-btn" href="https://sub.photelier-academy.com/event/fLms6F9jtGPz/register" target="_blank">📅 個別セッション予約</a>
     <button id="reset-btn" onclick="resetConversation()">🔄 リセット</button>
   </div>
 </header>
+
+<!-- 検索モーダル -->
+<div id="search-modal" onclick="closeSearch()">
+  <div id="search-box" onclick="event.stopPropagation()">
+    <div id="search-header">
+      <button id="search-close" onclick="closeSearch()">✕</button>
+      <h3>🔍 会話を検索</h3>
+      <div id="search-input-wrap">
+        <input id="search-input" type="text" placeholder="キーワードを入力（例：プロフィール）" oninput="doSearch()" />
+        <button id="search-go-btn" onclick="doSearch()">検索</button>
+      </div>
+    </div>
+    <div id="search-results">
+      <div id="search-no-result" style="display:none">該当する会話が見つかりませんでした</div>
+    </div>
+  </div>
+</div>
 
 <!-- 使い方モーダル -->
 <div id="howto-modal">
@@ -1118,6 +1254,7 @@
   let isLoading = false;
   let selectedImage = null;     // { base64, type }
   let courseMonths = 6;         // コース期間（デフォルト6ヶ月）
+  let chatHistory = [];         // 検索用の会話履歴
 
 
   // 受講生リストを取得
@@ -1191,7 +1328,8 @@
 
     updateDailyCounter(currentStudent);
     await loadProgress();
-    addMessage('ai', `こんにちは！${currentStudent}さん😊\nPhotelier AcademyのAIサポートです！\n\n写真の課題でも、SNS集客でも、なんでも気軽に相談してね✨\n今日はどんなことで詰まってる？`);
+    chatHistory = [];
+    addMessage('ai', `こんにちは！${currentStudent}さん😊\nPhotelier AcademyのAIサポートです！\n\n写真の課題でも、SNS集客でも、なんでも気軽に相談してね✨\n今日はどんなことで詰まってる？`, true);
     document.getElementById('howto-modal').classList.add('open');
   }
 
@@ -1205,10 +1343,13 @@
       const res = await fetch(`/api/conversation/${encodeURIComponent(currentStudent)}`);
       const data = await res.json();
       messagesEl.innerHTML = '';
+      chatHistory = [];
 
       if (data.messages && data.messages.length > 0) {
         for (const msg of data.messages) {
-          addMessage(msg.role === 'user' ? 'user' : 'ai', msg.content);
+          const role = msg.role === 'user' ? 'user' : 'ai';
+          addMessage(role, msg.content);
+          chatHistory.push({ role, text: msg.content });
         }
         // 一番下にスクロール
         messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -1236,7 +1377,7 @@
     messages.scrollTop = messages.scrollHeight;
   }
 
-  function addMessage(role, text) {
+  function addMessage(role, text, skipHistory = false) {
     const messages = document.getElementById('messages');
     const div = document.createElement('div');
     div.className = `message ${role}`;
@@ -1246,6 +1387,7 @@
     `;
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
+    if (!skipHistory) chatHistory.push({ role, text });
     return div;
   }
 
@@ -1404,6 +1546,49 @@
 
   function escapeHtml(str) {
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function openSearch() {
+    document.getElementById('search-modal').classList.add('open');
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-results').innerHTML = '<div id="search-no-result" style="text-align:center;padding:40px;color:#4a7a8a;font-size:14px;">キーワードを入力してね😊</div>';
+    setTimeout(() => document.getElementById('search-input').focus(), 100);
+  }
+
+  function closeSearch() {
+    document.getElementById('search-modal').classList.remove('open');
+  }
+
+  function doSearch() {
+    const keyword = document.getElementById('search-input').value.trim();
+    const resultsEl = document.getElementById('search-results');
+
+    if (!keyword) {
+      resultsEl.innerHTML = '<div style="text-align:center;padding:40px;color:#4a7a8a;font-size:14px;">キーワードを入力してね😊</div>';
+      return;
+    }
+
+    const lower = keyword.toLowerCase();
+    const matched = chatHistory.filter(m => m.text.toLowerCase().includes(lower));
+
+    if (matched.length === 0) {
+      resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:#4a7a8a;font-size:14px;">「${escapeHtml(keyword)}」に該当する会話が見つかりませんでした</div>`;
+      return;
+    }
+
+    const esc = escapeHtml;
+    const highlight = (text) => {
+      const parts = text.split(new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+      return parts.map(p => p.toLowerCase() === lower ? `<span class="search-highlight">${esc(p)}</span>` : esc(p)).join('');
+    };
+
+    resultsEl.innerHTML = `<div style="font-size:12px;color:#7a9aaa;padding:4px 2px 10px;">${matched.length}件見つかったよ！</div>` +
+      matched.map(m => `
+        <div class="search-result-item">
+          <div class="search-result-role">${m.role === 'user' ? '👤 あなた' : '🤖 AI'}</div>
+          <div class="search-result-text">${highlight(m.text)}</div>
+        </div>
+      `).join('');
   }
 
   const BOOKING_URL = 'https://sub.photelier-academy.com/event/fLms6F9jtGPz/register';
