@@ -1195,11 +1195,30 @@
     document.getElementById('howto-modal').classList.add('open');
   }
 
-  function changeStudent() {
+  async function changeStudent() {
     currentStudent = document.getElementById('header-select').value;
-    document.getElementById('messages').innerHTML = '';
+    const messagesEl = document.getElementById('messages');
+    messagesEl.innerHTML = '<div style="text-align:center;color:#7a9aaa;font-size:13px;padding:20px;">読み込み中...</div>';
     updateDailyCounter(currentStudent);
-    addMessage('ai', `こんにちは！${currentStudent}さん😊\nPhotelier AcademyのAIサポートです！\n\n今日はどんなことで相談したい？`);
+
+    try {
+      const res = await fetch(`/api/conversation/${encodeURIComponent(currentStudent)}`);
+      const data = await res.json();
+      messagesEl.innerHTML = '';
+
+      if (data.messages && data.messages.length > 0) {
+        for (const msg of data.messages) {
+          addMessage(msg.role === 'user' ? 'user' : 'ai', msg.content);
+        }
+        // 一番下にスクロール
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      } else {
+        addMessage('ai', `こんにちは！${currentStudent}さん😊\nPhotelier AcademyのAIサポートです！\n\n今日はどんなことで相談したい？`);
+      }
+    } catch {
+      messagesEl.innerHTML = '';
+      addMessage('ai', `こんにちは！${currentStudent}さん😊\nPhotelier AcademyのAIサポートです！\n\n今日はどんなことで相談したい？`);
+    }
   }
 
   function addImageMessage(base64, type, text) {
