@@ -427,6 +427,28 @@
       margin-top: 10px;
       border: 1px solid #cde;
       display: block;
+      cursor: zoom-in;
+      transition: opacity 0.2s;
+    }
+    .sub-card-img:hover { opacity: 0.85; }
+
+    /* 画像拡大ライトボックス */
+    #img-lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+    #img-lightbox.open { display: flex; }
+    #img-lightbox img {
+      max-width: 92vw;
+      max-height: 92vh;
+      border-radius: 10px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
     }
     .sub-card-url {
       display: inline-block;
@@ -689,7 +711,7 @@
           <div class="sub-card-date">${dateStr}</div>
           ${sub.content ? `<div class="sub-card-content">${escapeHtml(sub.content)}</div>` : ''}
           ${sub.url ? `<a class="sub-card-url" href="${escapeHtml(sub.url)}" target="_blank">🔗 ${escapeHtml(sub.url)}</a>` : ''}
-          ${sub.image_data ? `<img class="sub-card-img" src="data:image/jpeg;base64,${sub.image_data}" alt="提出画像">` : ''}
+          ${sub.image_data ? `<img class="sub-card-img" src="data:image/jpeg;base64,${sub.image_data}" alt="提出画像" onclick="openLightbox(this.src)">` : ''}
         `;
         body.appendChild(card);
       }
@@ -704,6 +726,21 @@
 
   // 初回読み込み
   loadAllStudents();
+</script>
+<!-- 画像拡大ライトボックス -->
+<div id="img-lightbox" onclick="closeLightbox()">
+  <img id="lightbox-img" src="" alt="拡大画像">
+</div>
+
+<script>
+  function openLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('img-lightbox').classList.add('open');
+  }
+  function closeLightbox() {
+    document.getElementById('img-lightbox').classList.remove('open');
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 </script>
 </body>
 </html>
