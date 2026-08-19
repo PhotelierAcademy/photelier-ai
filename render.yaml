@@ -11,3 +11,9 @@ services:
         sync: false
       - key: SUPABASE_KEY
         sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: TEACHER_PASSWORD
+        sync: false
+      - key: UPSELL_PRICE_JPY
+        sync: false

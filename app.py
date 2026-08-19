@@ -1,11 +1,12 @@
 import os
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from typing import Optional
-from fastapi import FastAPI, HTTPException
+import httpx
+from fastapi import FastAPI, HTTPException, Header, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse, FileResponse, RedirectResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -235,12 +236,42 @@ SYSTEM_PROMPT = """あなたはPhotelier Academyを運営する「さちえ先�
 
 # ---- Supabaseを使ったデータ管理 ----
 
+def get_member(email: str) -> Optional[dict]:
+    """会員（サブスク／これからの本講座受講生）。キーはメールアドレス。"""
+    if "@" not in email:
+        return None
+    try:
+        result = supabase.table("members").select("*").eq("email", email.strip().lower()).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"❌ 会員取得エラー: {e}")
+        return None
+
+
+def unlocked_month(member: dict) -> int:
+    """入会日から31日ごとに1ヶ月分ずつ開放。0＝入会直後の分だけ。"""
+    if member.get("full_unlock") or member.get("tier") == "course":
+        return 999
+    started = member.get("subscription_started_at")
+    if not started:
+        return 0
+    days = (datetime.now().date() - date.fromisoformat(started)).days
+    return max(0, days // 31)
+
+
 def get_student_info(student_name: str) -> Optional[dict]:
     if STUDENTS_PATH.exists():
         data = json.loads(STUDENTS_PATH.read_text(encoding="utf-8"))
         for s in data["students"]:
             if isinstance(s, dict) and s["name"] == student_name:
                 return s
+    member = get_member(student_name)
+    if member:
+        return {
+            "name": member["name"],
+            "end_date": member.get("support_end"),
+            "course_months": member.get("course_months") or 10,
+        }
     return None
 
 def get_monthly_count(student_name: str) -> int:
@@ -295,12 +326,31 @@ class ChatRequest(BaseModel):
 class ResetRequest(BaseModel):
     student_name: str
 
+# 入口は3つ。中身は同じ1枚で、開いたアドレスによって最初の画面だけ変える。
+#   /        … サロン会員（8/28のLPからここへ来る）
+#   /course  … 本講座の受講生（入り方は会員さんと同じ。見出しだけ変わる）
+#   /old     … これまでの6名（お名前＋合言葉）。11月にこの入口ごと消せる。
+
 @app.get("/")
 async def root():
     return FileResponse("static/index.html")
 
+
+@app.get("/course")
+async def course_login():
+    return FileResponse("static/index.html")
+
+
+@app.get("/old")
+async def legacy_login():
+    return FileResponse("static/index.html")
+
 @app.get("/api/students")
-async def get_students():
+async def get_students(authorization: str = Header(None)):
+    # 受講生のお名前は、合言葉が合っている方にだけお見せする。
+    # 誰にでも見えると「誰が受講しているか」が外から分かってしまう。
+    if legacy_pass_from_auth(authorization) != LEGACY_PASSCODE or not LEGACY_PASSCODE:
+        raise HTTPException(status_code=401, detail="合言葉が必要です")
     if STUDENTS_PATH.exists():
         data = json.loads(STUDENTS_PATH.read_text(encoding="utf-8"))
         students = data.get("students", [])
@@ -309,8 +359,912 @@ async def get_students():
         return {"students": names}
     return {"students": []}
 
+# ---- 会員ログイン（サブスク／これからの本講座受講生）----
+# 既存6名は students.json のまま「名前を選ぶだけ」で入れる。ここは新しい会員だけが通る道。
+# パスワードは Supabase Auth が預かる（このアプリは受け取らないし保存もしない）。
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: str
+
+
+def member_public(member: dict) -> dict:
+    return {
+        "key": member["email"],
+        "name": member["name"],
+        "tier": member["tier"],
+        "unlocked_month": unlocked_month(member),
+        "full_unlock": member.get("full_unlock", False),
+        "subscription_started_at": member.get("subscription_started_at"),
+        "support_end": member.get("support_end"),
+    }
+
+
+@app.post("/api/login")
+async def login(request: LoginRequest):
+    email = request.email.strip().lower()
+    async with httpx.AsyncClient(timeout=15) as http:
+        res = await http.post(
+            f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
+            headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+            json={"email": email, "password": request.password},
+        )
+    if res.status_code != 200:
+        raise HTTPException(status_code=401, detail="メールアドレスかパスワードが違うみたいです")
+
+    member = get_member(email)
+    if not member:
+        raise HTTPException(status_code=403, detail="会員情報が見つかりませんでした。さちえ先生にご連絡ください")
+    if not member.get("active", True):
+        raise HTTPException(status_code=403, detail="サロンのご利用期間が終了しています。またいつでもお戻りくださいね😊")
+
+    return {"token": res.json()["access_token"], "member": member_public(member)}
+
+
+async def member_from_token(authorization: Optional[str]) -> dict:
+    """ログイン中の会員を、預かっているトークンから取り出す。"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="ログインが必要です")
+    async with httpx.AsyncClient(timeout=15) as http:
+        res = await http.get(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={"apikey": SUPABASE_KEY, "Authorization": authorization},
+        )
+    if res.status_code != 200:
+        raise HTTPException(status_code=401, detail="ログインの有効期限が切れました")
+
+    member = get_member(res.json().get("email", ""))
+    if not member:
+        raise HTTPException(status_code=403, detail="会員情報が見つかりませんでした")
+    # 退会された方。責める言い方にならないように。
+    if not member.get("active", True):
+        raise HTTPException(status_code=403, detail="サロンのご利用期間が終了しています。またいつでもお戻りくださいね😊")
+    return member
+
+
+@app.get("/api/me")
+async def me(authorization: str = Header(None)):
+    """保存しておいたトークンで、ログイン状態を復元する。"""
+    return {"member": member_public(await member_from_token(authorization))}
+
+
+# ---- そのデータが、その人のものかを確かめる ----
+# 会員（メールアドレスでログインする方）のデータは、本人のトークンがないと触れない。
+# 既存6名（お名前を選んで入る方）は、11月にサポートが終わるまで今のまま。
+
+TEACHER_PASSWORD = os.getenv("TEACHER_PASSWORD")
+
+
+def is_teacher(teacher_key: Optional[str]) -> bool:
+    return bool(TEACHER_PASSWORD) and teacher_key == TEACHER_PASSWORD
+
+
+def require_teacher(teacher_key: Optional[str]):
+    if not is_teacher(teacher_key):
+        raise HTTPException(status_code=401, detail="先生用のパスワードが必要です")
+
+
+# 既存6名（お名前を選んで入る方）の合言葉。
+# これが無いと「名前を選ぶだけ」で誰にでもなれてしまい、
+# その方の相談履歴も、動画102本も、外から読めてしまう。
+# 8/28にサイトを公開したら、URL を知っている人＝世界中になるので必ず要る。
+# 11月に全員がメールアドレスのログインへ移ったら、この仕組みごと消してよい。
+LEGACY_PASSCODE = os.getenv("LEGACY_PASSCODE")
+
+
+def legacy_pass_from_auth(authorization: Optional[str]) -> Optional[str]:
+    """既存6名は「Legacy 合言葉」の形で送ってくる。
+    会員は「Bearer トークン」なので、同じ入口を相乗りで使える。
+    こうすると、ひとつひとつの窓口を書き換えずに済む。"""
+    if authorization and authorization.startswith("Legacy "):
+        return authorization[len("Legacy "):].strip()
+    return None
+
+
+def is_legacy_ok(student_name: Optional[str], legacy_pass: Optional[str]) -> bool:
+    """お名前が既存6名にあり、かつ合言葉が合っているときだけ True。"""
+    if not LEGACY_PASSCODE or not legacy_pass:
+        return False
+    if not student_name or student_name not in legacy_names():
+        return False
+    return legacy_pass == LEGACY_PASSCODE
+
+
+async def require_owner(student_name: str, authorization: Optional[str],
+                        teacher_key: Optional[str] = None):
+    """会員のデータは、本人とさちえ先生だけが触れる。"""
+    if is_teacher(teacher_key):
+        return
+    if "@" not in (student_name or ""):
+        # 既存6名。合言葉が合っていなければ通さない。
+        if is_legacy_ok(student_name, legacy_pass_from_auth(authorization)):
+            return
+        raise HTTPException(status_code=401, detail="合言葉が必要です")
+    member = await member_from_token(authorization)
+    if member["email"].strip().lower() != student_name.strip().lower():
+        raise HTTPException(status_code=403, detail="ほかの方のデータは見られません")
+
+
+# ---- 動画教材の一覧 ----
+# このファイルは static に置かない。static に置くと、ログインしていない人でも
+# URL を開くだけで全102本の Vimeo ID と限定公開ハッシュが読めてしまい、
+# サブスクも全開放（49,800円）も意味がなくなるため。
+# ここでは「その人が今日見ていい分」だけを渡す。まだ開いていない回は
+# タイトルは残して ID を外す（何ヶ月目に開くかは画面に出したいので）。
+
+LIBRARY_PATH = Path("data/video_library.json")
+
+
+def legacy_names() -> list:
+    """お名前を選んで入る方（既存6名）。11月にサポートが終わるまでの経過措置。"""
+    if not STUDENTS_PATH.exists():
+        return []
+    data = json.loads(STUDENTS_PATH.read_text(encoding="utf-8"))
+    return [s["name"] if isinstance(s, dict) else s for s in data.get("students", [])]
+
+
+def video_is_open(v: dict, c: dict, tier: str, unlocked: int) -> bool:
+    """index.html の isVideoOpen と同じ判定。ここが本物で、画面側は見た目のため。"""
+    if tier == "course":
+        return True
+    if isinstance(v.get("m"), int):
+        return v["m"] <= unlocked
+    if c.get("course_only"):
+        return False
+    return (c.get("month") or 0) <= unlocked
+
+
+async def viewer_scope(authorization: Optional[str], x_teacher_key: Optional[str],
+                       student_name: Optional[str]) -> tuple:
+    """動画を見ていい人かを確かめて、(tier, 開放月) を返す。
+    さちえ先生 → 全部 / 会員 → トークンで判定 / 既存6名 → お名前＋合言葉で。
+    どれでもなければ 401。"""
+    if is_teacher(x_teacher_key):
+        return "course", 999
+    legacy_pass = legacy_pass_from_auth(authorization)
+    if legacy_pass is not None:
+        if is_legacy_ok(student_name, legacy_pass):
+            return "course", 999
+        raise HTTPException(status_code=401, detail="合言葉が必要です")
+    if authorization:
+        member = await member_from_token(authorization)
+        return member["tier"], unlocked_month(member)
+    raise HTTPException(status_code=401, detail="ログインが必要です")
+
+
+@app.get("/api/library")
+async def library(authorization: str = Header(None),
+                  x_teacher_key: str = Header(None),
+                  student_name: str = None):
+    tier, unlocked = await viewer_scope(authorization, x_teacher_key, student_name)
+    data = json.loads(LIBRARY_PATH.read_text(encoding="utf-8"))
+    for c in data.get("categories", []):
+        for v in c.get("videos", []):
+            # リアルセミナーは、本講座の方には完全版、それ以外にはカット版を見ていただく。
+            # （良かったことシェアは受講生の個人的なお話なので、サロンには出さない）
+            # 入れ替えはここサーバー側でやる。cut は必ず消すので、
+            # サロンの方のブラウザに完全版の動画IDが届くことは一度もない。
+            cut = v.pop("cut", None)
+            if cut and tier != "course":
+                v["id"] = cut.get("id")
+                if cut.get("h"):
+                    v["h"] = cut["h"]
+                else:
+                    v.pop("h", None)
+                # 要約は完全版のことを書いてあって、良かったことシェア（お名前入り）も
+                # 混ざっている。カット版には付けない。
+                v.pop("summary", None)
+                if cut.get("summary"):
+                    v["summary"] = cut["summary"]
+            if not video_is_open(v, c, tier, unlocked):
+                v["id"] = None
+                v.pop("h", None)
+                # まだ開いていない動画の要約も送らない
+                v.pop("summary", None)
+    return data
+
+
+# ---- サブスク申し込み（Stripe）----
+# 流れ: LP の申込ボタン → /subscribe → Stripe Checkout → /welcome?session_id=...
+#       → その場でパスワードを決めてもらう → /api/signup-complete で会員発行 → そのままログイン
+# 会員登録メールは送らない（Supabase の無料枠は送信数が少なく、募集で詰まるため）。
+
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+# 商品IDとクーポンIDは、テストと本番で別物になる。
+# ここに初期値を書いてしまうと、本番なのにテストの商品で決済されてしまうので、
+# 必ず環境変数（ローカルは .env、公開後は Render の Environment）から読む。
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
+STRIPE_FIRST_MONTH_COUPON = os.getenv("STRIPE_FIRST_MONTH_COUPON")
+STRIPE_API = "https://api.stripe.com/v1"
+
+
+async def stripe_call(method: str, path: str, data: Optional[dict] = None,
+                      idempotency_key: Optional[str] = None) -> dict:
+    # data は必ず dict で渡す。httpx はリストを「生データ」と解釈してしまい送信に失敗する。
+    # idempotency_key を渡すと、二重送信されても課金は1回だけになる。
+    url = f"{STRIPE_API}{path}"
+    auth = (STRIPE_SECRET_KEY, "")
+    headers = {"Idempotency-Key": idempotency_key} if idempotency_key else None
+    async with httpx.AsyncClient(timeout=20) as http:
+        if method == "POST":
+            res = await http.post(url, auth=auth, data=data, headers=headers)
+        else:
+            res = await http.get(url, auth=auth)
+    body = res.json()
+    if res.status_code >= 400:
+        print(f"❌ Stripeエラー: {body}")
+        raise HTTPException(status_code=502, detail="決済システムに接続できませんでした")
+    return body
+
+
+@app.get("/salon")
+async def salon_lp():
+    """サブスク（Photelier サロン）の申込ページ。"""
+    return FileResponse("static/salon-lp.html")
+
+
+@app.get("/subscribe")
+async def subscribe(request: Request):
+    """LP の申込ボタンの飛び先。Stripe の決済画面へ送る。"""
+    if not (STRIPE_PRICE_ID and STRIPE_FIRST_MONTH_COUPON):
+        raise HTTPException(500, "決済の設定が読み込めていません（STRIPE_PRICE_ID / STRIPE_FIRST_MONTH_COUPON）")
+    base = str(request.base_url).rstrip("/")
+    session = await stripe_call("POST", "/checkout/sessions", {
+        "mode": "subscription",
+        "line_items[0][price]": STRIPE_PRICE_ID,
+        "line_items[0][quantity]": "1",
+        "discounts[0][coupon]": STRIPE_FIRST_MONTH_COUPON,
+        "success_url": f"{base}/welcome?session_id={{CHECKOUT_SESSION_ID}}",
+        "cancel_url": f"{base}/",
+        "locale": "ja",
+        "billing_address_collection": "auto",
+    })
+    return RedirectResponse(session["url"], status_code=303)
+
+
+@app.get("/welcome")
+async def welcome_page():
+    return FileResponse("static/welcome.html")
+
+
+@app.get("/api/checkout/{session_id}")
+async def checkout_status(session_id: str):
+    """決済が完了しているか、どのメールアドレスで払われたかを返す。"""
+    session = await stripe_call("GET", f"/checkout/sessions/{session_id}")
+    if session.get("payment_status") != "paid":
+        raise HTTPException(status_code=402, detail="お支払いがまだ完了していないようです")
+    email = (session.get("customer_details") or {}).get("email", "").strip().lower()
+    return {
+        "email": email,
+        "name": (session.get("customer_details") or {}).get("name") or "",
+        "already_registered": get_member(email) is not None,
+    }
+
+
+class SignupCompleteRequest(BaseModel):
+    session_id: str
+    name: str
+    password: str
+
+
+@app.post("/api/signup-complete")
+async def signup_complete(request: SignupCompleteRequest):
+    """決済直後にパスワードを決めてもらい、会員を発行してそのままログインさせる。"""
+    if len(request.password) < 8:
+        raise HTTPException(status_code=400, detail="パスワードは8文字以上にしてください")
+    name = request.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="お名前を入れてください")
+
+    session = await stripe_call("GET", f"/checkout/sessions/{request.session_id}")
+    if session.get("payment_status") != "paid":
+        raise HTTPException(status_code=402, detail="お支払いが確認できませんでした")
+    email = (session.get("customer_details") or {}).get("email", "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="メールアドレスが取得できませんでした")
+    if get_member(email):
+        raise HTTPException(status_code=409, detail="このメールアドレスはすでに登録済みです。ログイン画面からお入りください")
+
+    async with httpx.AsyncClient(timeout=20) as http:
+        created = await http.post(
+            f"{SUPABASE_URL}/auth/v1/admin/users",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}",
+                     "Content-Type": "application/json"},
+            json={"email": email, "password": request.password, "email_confirm": True},
+        )
+    if created.status_code >= 400:
+        # ここで一番怖いのは「お支払いは済んでいるのに入れない」状態。
+        # メールアドレスがすでに使われている場合は、ログイン画面へ案内する
+        # （パスワードを忘れていても、ログイン画面から再設定できる）。
+        print(f"❌ 会員作成エラー ({email}): {created.text}")
+        if "already" in created.text.lower() or created.status_code == 422:
+            raise HTTPException(status_code=409,
+                                detail="このメールアドレスはすでにお使いです。ログイン画面からお入りください。"
+                                       "パスワードがご不明なときは、ログイン画面の「パスワードを忘れた方」からお進みください")
+        raise HTTPException(status_code=500, detail="登録に失敗しました。さちえ先生にご連絡ください")
+
+    try:
+        supabase.table("members").insert({
+            "id": created.json()["id"],
+            "email": email,
+            "name": name,
+            "tier": "subscription",
+            "subscription_started_at": datetime.now().date().isoformat(),
+            "stripe_customer_id": session.get("customer"),
+            "stripe_subscription_id": session.get("subscription"),
+        }).execute()
+    except Exception as e:
+        # お支払いは通っている。ログの内容をそのまま伝えれば手で直せる。
+        print(f"❌ 会員の行が作れませんでした ({email} / stripe={session.get('customer')}): {e}")
+        raise HTTPException(status_code=500,
+                            detail="お支払いは完了していますが、登録の最後で止まりました。"
+                                   "お手数ですがさちえ先生にご連絡ください（二重にお支払いは発生しません）")
+
+    return await login(LoginRequest(email=email, password=request.password))
+
+
+# ---- 本講座の受講生を、さちえ先生が1人ずつ発行する ----
+# サロンはカード決済のときに自動で会員ができる。
+# 本講座はリアルでお申し込みいただくので、先生の画面から手で作る。
+# 作った方は最初から全部の動画が見られる（tier = course）。
+# 最初のパスワードは先生が決めてお伝えし、ご本人があとから変えられる。
+
+class NewCourseMember(BaseModel):
+    email: str
+    name: str
+    password: str
+    support_end: Optional[str] = None   # サポートの終わる日（空でもよい）
+
+
+@app.get("/api/members")
+async def list_members(x_teacher_key: str = Header(None)):
+    """会員さんの一覧。ここで退会の切り替えもする。"""
+    require_teacher(x_teacher_key)
+    cols = "id,email,name,tier,active,full_unlock,support_end,subscription_started_at,created_at"
+    try:
+        rows = supabase.table("members").select(
+            cols + ",openchat_name").order("created_at", desc=True).execute().data or []
+    except Exception:
+        # まだ schema_openchat.sql を実行していないとき。先生ページを止めない。
+        rows = supabase.table("members").select(
+            cols).order("created_at", desc=True).execute().data or []
+    return {"members": rows}
+
+
+@app.post("/api/members")
+async def create_course_member(request: NewCourseMember, x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
+    email = request.email.strip().lower()
+    name = request.name.strip()
+    if "@" not in email:
+        raise HTTPException(status_code=400, detail="メールアドレスの形になっていないようです")
+    if not name:
+        raise HTTPException(status_code=400, detail="お名前を入れてください")
+    if len(request.password) < 8:
+        raise HTTPException(status_code=400, detail="最初のパスワードは8文字以上にしてください")
+    if get_member(email):
+        raise HTTPException(status_code=409, detail="このメールアドレスはすでに登録されています")
+
+    async with httpx.AsyncClient(timeout=20) as http:
+        created = await http.post(
+            f"{SUPABASE_URL}/auth/v1/admin/users",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}",
+                     "Content-Type": "application/json"},
+            json={"email": email, "password": request.password, "email_confirm": True},
+        )
+    if created.status_code >= 400:
+        print(f"❌ 受講生の作成エラー ({email}): {created.text}")
+        if "already" in created.text.lower() or created.status_code == 422:
+            raise HTTPException(status_code=409, detail="このメールアドレスはすでにお使いです")
+        raise HTTPException(status_code=500, detail="作成できませんでした")
+
+    try:
+        supabase.table("members").insert({
+            "id": created.json()["id"],
+            "email": email,
+            "name": name,
+            "tier": "course",
+            "support_end": request.support_end or None,
+        }).execute()
+    except Exception as e:
+        print(f"❌ 受講生の行が作れませんでした ({email}): {e}")
+        raise HTTPException(status_code=500, detail="最後のところで止まりました。もう一度お試しください")
+
+    return {"ok": True, "email": email, "name": name}
+
+
+class MemberActive(BaseModel):
+    active: bool
+
+
+@app.patch("/api/members/{member_id}")
+async def update_member(member_id: str, request: MemberActive, x_teacher_key: str = Header(None)):
+    """在籍中↔退会 の切り替え。退会にすると、その場で入れなくなる。"""
+    require_teacher(x_teacher_key)
+    supabase.table("members").update({"active": request.active}).eq("id", member_id).execute()
+    return {"ok": True, "active": request.active}
+
+
+# ---- 全開放（アップセル）----
+# 入会直後に1枚だけはさむ。10ヶ月かけて開く分を、今日ぜんぶ開ける、という選択。
+# 中身は同じで、届く速さだけが変わる。月々のお支払いはそのまま続く。
+
+UPSELL_PRICE_JPY = int(os.getenv("UPSELL_PRICE_JPY", "49800"))
+
+
+@app.get("/upsell")
+async def upsell_page():
+    return FileResponse("static/upsell.html")
+
+
+@app.get("/api/salon-stats")
+async def salon_stats(x_teacher_key: str = Header(None)):
+    """サロンの数字。入会数と、そのうち何人が全開放したか。"""
+    require_teacher(x_teacher_key)
+    members = supabase.table("members").select(
+        "tier,active,full_unlock,subscription_started_at").eq("tier", "subscription").execute().data or []
+    joined = len(members)
+    unlocked = sum(1 for m in members if m.get("full_unlock"))
+    active = sum(1 for m in members if m.get("active", True))
+    this_month = datetime.now().strftime("%Y-%m")
+    joined_this_month = sum(
+        1 for m in members if (m.get("subscription_started_at") or "").startswith(this_month))
+    return {
+        "joined": joined,
+        "joined_this_month": joined_this_month,
+        "active": active,
+        "unlocked": unlocked,
+        "unlock_rate": round(unlocked / joined * 100, 1) if joined else 0,
+    }
+
+
+@app.post("/api/upsell-purchase")
+async def upsell_purchase(authorization: str = Header(None)):
+    """入会時に登録されたカードへ、そのままお支払いいただく（カード再入力なし）。"""
+    member = await member_from_token(authorization)
+    if member.get("full_unlock"):
+        return {"status": "already"}
+
+    customer_id = member.get("stripe_customer_id")
+    if not customer_id:
+        raise HTTPException(status_code=400, detail="お支払い情報が見つかりませんでした。さちえ先生にご連絡ください")
+
+    customer = await stripe_call("GET", f"/customers/{customer_id}")
+    card = (customer.get("invoice_settings") or {}).get("default_payment_method")
+    if not card:
+        cards = await stripe_call("GET", f"/payment_methods?customer={customer_id}&type=card&limit=1")
+        found = cards.get("data") or []
+        card = found[0]["id"] if found else None
+    if not card:
+        raise HTTPException(status_code=400, detail="ご登録のカードが見つかりませんでした。さちえ先生にご連絡ください")
+
+    try:
+        intent = await stripe_call("POST", "/payment_intents", {
+            "amount": str(UPSELL_PRICE_JPY),
+            "currency": "jpy",
+            "customer": customer_id,
+            "payment_method": card,
+            "off_session": "true",
+            "confirm": "true",
+            "description": "Photelier サロン 全開放",
+        }, idempotency_key=f"upsell-{member['id']}")
+    except HTTPException:
+        raise HTTPException(status_code=402,
+                            detail="カードでのお支払いができませんでした。カード会社の確認が必要かもしれません。")
+
+    if intent.get("status") != "succeeded":
+        raise HTTPException(status_code=402, detail="お支払いが完了しませんでした。もう一度お試しください。")
+
+    supabase.table("members").update({"full_unlock": True}).eq("email", member["email"]).execute()
+    return {"status": "ok"}
+
+
+# ---- お支払いとお手続き（Stripe のお客様ポータル）----
+# 退会・カードの変更・領収書の発行を、会員さんご自身でしていただくための入口。
+# ここが無いと、その全部がさちえ先生への個別連絡になってしまう。
+# 画面は Stripe 側が用意してくれるので、こちらは行き先の URL を作って渡すだけ。
+
+@app.post("/api/billing-portal")
+async def billing_portal(request: Request, authorization: str = Header(None)):
+    member = await member_from_token(authorization)
+    customer_id = member.get("stripe_customer_id")
+    if not customer_id:
+        raise HTTPException(status_code=400,
+                            detail="お支払い情報が見つかりませんでした。お手数ですが、さちえ先生にご連絡ください")
+    base = str(request.base_url).rstrip("/")
+    try:
+        session = await stripe_call("POST", "/billing_portal/sessions", {
+            "customer": customer_id,
+            "return_url": f"{base}/",
+        })
+    except HTTPException:
+        # Stripe 管理画面でお客様ポータルがまだ有効になっていないと、ここに来る
+        raise HTTPException(status_code=503,
+                            detail="お手続きの画面をご用意できませんでした。"
+                                   "お手数ですが、さちえ先生にご連絡ください")
+    return {"url": session["url"]}
+
+
+# ---- 月1回の質問会アーカイブ ----
+# カリキュラム動画（video_library.json）と違って毎月増えていくので、
+# さちえ先生が先生ページから1行足すだけで並ぶようにする。
+# 入会した月に関係なく、全員がすべての回を見られる。
+
+class QaSessionRequest(BaseModel):
+    held_on: str
+    title: str
+    vimeo_id: str
+    vimeo_h: Optional[str] = None
+    note: Optional[str] = None
+
+
+@app.get("/api/qa-sessions")
+async def list_qa_sessions(authorization: str = Header(None),
+                           x_teacher_key: str = Header(None),
+                           student_name: str = None):
+    # 動画のIDが入っているので、動画教材と同じく会員だけに渡す
+    await viewer_scope(authorization, x_teacher_key, student_name)
+    try:
+        rows = supabase.table("qa_sessions").select("*").order(
+            "held_on", desc=True).execute().data or []
+    except Exception:
+        # まだ Supabase に表を作っていないとき。動画教材まで止めない。
+        return {"sessions": [], "ready": False}
+    return {"sessions": rows, "ready": True}
+
+
+@app.post("/api/qa-sessions")
+async def add_qa_session(request: QaSessionRequest, x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
+    vimeo_id = request.vimeo_id.strip().rstrip("/").split("/")[-1]
+    if not vimeo_id.isdigit():
+        raise HTTPException(status_code=400, detail="Vimeoの動画IDは数字です（URLの最後の数字）")
+    row = supabase.table("qa_sessions").insert({
+        "held_on": request.held_on,
+        "title": request.title.strip(),
+        "vimeo_id": vimeo_id,
+        "vimeo_h": (request.vimeo_h or "").strip() or None,
+        "note": (request.note or "").strip() or None,
+    }).execute().data
+    return {"status": "ok", "session": row[0] if row else None}
+
+
+@app.delete("/api/qa-sessions/{session_id}")
+async def delete_qa_session(session_id: int, x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
+    supabase.table("qa_sessions").delete().eq("id", session_id).execute()
+    return {"status": "ok"}
+
+
+# ---- 質問会の日程 ----
+# 毎月 第4金曜 21:00。12月だけは第4金曜がクリスマス前後に当たるので第3金曜。
+# 初回は 2026/9/18。8/28（第4金曜）は1dayレッスンの日なので質問会はやらない。
+# 日程の決まりはここにだけ書く。画面はこの API から受け取る。
+
+QA_FIRST = date(2026, 9, 18)
+QA_DEADLINE_DAYS = 3          # 開催の3日前で締め切る（準備の時間を取るため）
+
+# 質問会のzoomの部屋。毎回おなじ部屋を使う（定期ミーティング・期限なし）。
+# 部屋を作りなおしたときは、この1行だけ書き換える。
+# このURLは、ログインしている会員さんの画面にだけ出す。
+QA_ZOOM_URL = "https://us02web.zoom.us/j/86947628346?pwd=5dbZMfks8X6VpWIYssAxs4fJZDRa1z.1"
+
+# その月だけ日をずらしたいとき。{(年, 月): 開催日}
+# 用が済んだ行は消さずに残しておくと、あとから「あの月はいつだったか」を追える。
+QA_OVERRIDES = {
+    (2026, 9): date(2026, 9, 18),   # 初回。第4金曜(9/25)はさちえ先生に先約があるため1週間前倒し
+}
+
+
+def qa_session_date(year: int, month: int) -> date:
+    """その月の質問会の日。12月だけ第3金曜、ほかは第4金曜。"""
+    if (year, month) in QA_OVERRIDES:
+        return QA_OVERRIDES[(year, month)]
+    nth = 3 if month == 12 else 4
+    first = date(year, month, 1)
+    offset = (4 - first.weekday()) % 7        # weekday: 月=0 … 金=4
+    return date(year, month, 1 + offset + (nth - 1) * 7)
+
+
+def next_qa_date(today: Optional[date] = None) -> date:
+    """次に開かれる質問会の日。当日はまだ「次」として扱う。"""
+    today = today or date.today()
+    y, m = today.year, today.month
+    for _ in range(14):
+        d = qa_session_date(y, m)
+        if d >= today and d >= QA_FIRST:
+            return d
+        m += 1
+        if m > 12:
+            y, m = y + 1, 1
+    return QA_FIRST
+
+
+def qa_accepting_for(today: Optional[date] = None) -> date:
+    """今いただいた質問を、どの回で扱うか。締切を過ぎていたら次の回に回す。"""
+    today = today or date.today()
+    d = next_qa_date(today)
+    if (d - today).days < QA_DEADLINE_DAYS:
+        return next_qa_date(d + timedelta(days=1))
+    return d
+
+
+@app.get("/api/qa-next")
+async def qa_next(authorization: str = Header(None)):
+    accepting = qa_accepting_for()
+    result = {
+        "next": next_qa_date().isoformat(),
+        "accepting_for": accepting.isoformat(),
+        "deadline": (accepting - timedelta(days=QA_DEADLINE_DAYS)).isoformat(),
+    }
+    # zoomのURLは、在籍中の会員さんにだけ渡す。
+    # ログインしていない人には日付だけ返す（画面が止まらないように）。
+    try:
+        await member_from_token(authorization)
+        result["zoom_url"] = QA_ZOOM_URL
+    except HTTPException:
+        pass
+    return result
+
+
+# ---- 質問会の事前質問 ----
+# 会員さんがサロンの中から質問を送る。さちえ先生は先生ページでまとめて読む。
+
+class QuestionRequest(BaseModel):
+    body: str
+
+
+@app.post("/api/questions")
+async def add_question(request: QuestionRequest, authorization: str = Header(None)):
+    member = await member_from_token(authorization)
+    body = request.body.strip()
+    if not body:
+        raise HTTPException(status_code=400, detail="質問の内容を入れてください")
+    if len(body) > 1000:
+        raise HTTPException(status_code=400, detail="1000文字まででお願いします")
+    try:
+        supabase.table("qa_questions").insert({
+            "email": member["email"],
+            "name": member.get("name") or member["email"],
+            "body": body,
+            "for_session": qa_accepting_for().isoformat(),
+        }).execute()
+    except Exception:
+        # まだ Supabase に表を作っていないとき
+        raise HTTPException(status_code=503, detail="いま質問をお預かりできませんでした。少ししてからもう一度お試しください。")
+    return {"status": "ok", "for_session": qa_accepting_for().isoformat()}
+
+
+@app.get("/api/my-questions")
+async def my_questions(authorization: str = Header(None)):
+    """自分が送った質問だけ。二重に送ってしまうのを防ぐため。"""
+    member = await member_from_token(authorization)
+    try:
+        rows = supabase.table("qa_questions").select("*").eq(
+            "email", member["email"]).gte(
+            "for_session", date.today().isoformat()).order(
+            "created_at").execute().data or []
+    except Exception:
+        # まだ Supabase に表を作っていないとき。ホーム画面まで止めない。
+        return {"questions": [], "ready": False}
+    return {"questions": rows, "ready": True}
+
+
+@app.get("/api/questions")
+async def list_questions(x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
+    try:
+        rows = supabase.table("qa_questions").select("*").order(
+            "for_session", desc=True).order("created_at").execute().data or []
+    except Exception:
+        return {"questions": [], "ready": False}
+    return {"questions": rows, "ready": True}
+
+
+@app.patch("/api/questions/{question_id}")
+async def mark_question(question_id: int, answered: bool = True,
+                        x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
+    supabase.table("qa_questions").update(
+        {"answered": answered}).eq("id", question_id).execute()
+    return {"status": "ok"}
+
+
+# ---- サロンのお知らせ ----
+# 全員に伝えたいこと（質問会の日程、リアルイベントの案内など）を置く場所。
+# 在籍している人にだけ届く。みんなの部屋（オープンチャット）は
+# 写真を出し合う場で、こちらは連絡の場。役割を分けている。
+
+class AnnouncementRequest(BaseModel):
+    title: str
+    body: str
+
+
+@app.get("/api/announcements")
+async def list_announcements(authorization: str = Header(None)):
+    """会員さん向け。新しいものから5件だけ返す。"""
+    await member_from_token(authorization)
+    try:
+        rows = supabase.table("announcements").select("*").order(
+            "created_at", desc=True).limit(5).execute().data or []
+    except Exception:
+        # まだ Supabase に表を作っていないとき。ホーム画面まで止めない。
+        return {"announcements": [], "ready": False}
+    return {"announcements": rows, "ready": True}
+
+
+@app.post("/api/announcements")
+async def add_announcement(request: AnnouncementRequest,
+                           x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
+    title = request.title.strip()
+    body = request.body.strip()
+    if not title or not body:
+        raise HTTPException(status_code=400, detail="タイトルと本文を入れてください")
+    try:
+        supabase.table("announcements").insert(
+            {"title": title, "body": body}).execute()
+    except Exception:
+        # まだ Supabase に表を作っていないとき
+        raise HTTPException(status_code=503, detail="お知らせの置き場所（announcements）がまだありません。Supabase の SQL Editor で schema_announcements.sql を実行してください。")
+    return {"status": "ok"}
+
+
+@app.delete("/api/announcements/{announcement_id}")
+async def delete_announcement(announcement_id: int,
+                              x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
+    supabase.table("announcements").delete().eq("id", announcement_id).execute()
+    return {"status": "ok"}
+
+
+@app.get("/api/announcements/all")
+async def list_announcements_all(x_teacher_key: str = Header(None)):
+    """先生ページ用。過去のものも全部。"""
+    require_teacher(x_teacher_key)
+    try:
+        rows = supabase.table("announcements").select("*").order(
+            "created_at", desc=True).execute().data or []
+    except Exception:
+        return {"announcements": [], "ready": False}
+    return {"announcements": rows, "ready": True}
+
+
+# ---- みんなの部屋（LINEオープンチャット）----
+# オープンチャットは匿名で参加できる仕組みなので、参加者一覧には
+# 「その部屋用の表示名」しか出ない。本名もメールアドレスも見えない。
+# そのままだと、退会された方がどの人か分からず、部屋に残り続けてしまう。
+#
+# なので「部屋で使うお名前」を先に教えていただき、保存してから参加コードを出す。
+# これで「お申し込みの方」と「部屋の表示名」が1対1でつながり、
+# 月に1回、退会された方を名簿で探して外していただける。
+#
+# URLと参加コードは環境変数。まだ部屋を作っていないうちは空でよく、
+# そのときはこの案内ごと画面に出ない（壊れない）。
+#
+# みんなの部屋は「サロンの方だけ」の場所。本講座の方には出さない。
+
+OPENCHAT_URL = os.getenv("OPENCHAT_URL", "").strip()
+OPENCHAT_CODE = os.getenv("OPENCHAT_CODE", "").strip()
+
+
+class OpenchatNameRequest(BaseModel):
+    name: str
+
+
+def openchat_missing_column():
+    return HTTPException(
+        status_code=503,
+        detail="みんなの部屋のお名前を保存する場所（members.openchat_name）がまだありません。"
+               "Supabase の SQL Editor で schema_openchat.sql を実行してください。")
+
+
+def is_salon(member: dict) -> bool:
+    """みんなの部屋は、サロンの方だけの場所。本講座の方には出さない。"""
+    return member.get("tier") == "subscription"
+
+
+@app.get("/api/openchat")
+async def openchat_info(authorization: str = Header(None)):
+    """みんなの部屋の案内。お名前を出していただくまで、参加コードは返さない。"""
+    member = await member_from_token(authorization)
+    if not OPENCHAT_URL or not OPENCHAT_CODE or not is_salon(member):
+        # まだ部屋を作っていない、または本講座の方。画面ごと出さない。
+        return {"ready": False}
+    name = (member.get("openchat_name") or "").strip()
+    if not name:
+        return {"ready": True, "name": None}
+    return {"ready": True, "name": name, "url": OPENCHAT_URL, "code": OPENCHAT_CODE}
+
+
+@app.post("/api/openchat")
+async def openchat_set_name(request: OpenchatNameRequest,
+                            authorization: str = Header(None)):
+    """部屋で使うお名前を預かって、参加コードをお返しする。"""
+    member = await member_from_token(authorization)
+    if not OPENCHAT_URL or not OPENCHAT_CODE:
+        raise HTTPException(status_code=503, detail="みんなの部屋は、いま準備中です")
+    if not is_salon(member):
+        raise HTTPException(status_code=403, detail="みんなの部屋は、サロンの方の場所です")
+
+    name = request.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="お名前を入れてください")
+    if len(name) > 30:
+        raise HTTPException(status_code=400, detail="お名前は30文字までにしてください")
+
+    try:
+        supabase.table("members").update(
+            {"openchat_name": name}).eq("email", member["email"]).execute()
+    except Exception:
+        raise openchat_missing_column()
+
+    return {"status": "ok", "name": name, "url": OPENCHAT_URL, "code": OPENCHAT_CODE}
+
+
+@app.post("/api/password-reset")
+async def password_reset(request: Request, body: PasswordResetRequest):
+    """パスワード再発行メールを Supabase から送る。さちえ先生の手はかからない。
+    メールのリンクを押すと /reset-password（新しいパスワードを決める画面）に着く。"""
+    base = str(request.base_url).rstrip("/")
+    async with httpx.AsyncClient(timeout=15) as http:
+        await http.post(
+            f"{SUPABASE_URL}/auth/v1/recover",
+            headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+            json={"email": body.email.strip().lower(),
+                  "redirect_to": f"{base}/reset-password"},
+        )
+    # 登録の有無は返さない（メールアドレスの存在確認に使われないように）
+    return {"status": "ok"}
+
+
+@app.get("/reset-password")
+async def reset_password_page():
+    """メールのリンクの着地点。新しいパスワードを決めてもらう。"""
+    return FileResponse("static/reset-password.html")
+
+
+class PasswordUpdateRequest(BaseModel):
+    access_token: str
+    password: str
+
+
+@app.post("/api/password-update")
+async def password_update(body: PasswordUpdateRequest):
+    """新しいパスワードを保存する。
+    メールのリンクに付いてくる合言葉（access_token）を持っている人だけが通る。
+    このアプリの鍵（SUPABASE_KEY）はブラウザに渡さないので、ここを経由させている。"""
+    if len(body.password) < 8:
+        raise HTTPException(status_code=400, detail="パスワードは8文字以上にしてください")
+    async with httpx.AsyncClient(timeout=15) as http:
+        res = await http.put(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={"apikey": SUPABASE_KEY,
+                     "Authorization": f"Bearer {body.access_token}",
+                     "Content-Type": "application/json"},
+            json={"password": body.password},
+        )
+    if res.status_code >= 400:
+        print(f"❌ パスワード更新エラー: {res.text}")
+        raise HTTPException(
+            status_code=400,
+            detail="このリンクは期限切れか、すでに使われています。"
+                   "お手数ですが、ログイン画面の「パスワードを忘れた方」からもう一度お試しください")
+    return {"email": res.json().get("email", "")}
+
+
 @app.get("/api/status/{student_name}")
-async def get_status(student_name: str):
+async def get_status(student_name: str, authorization: str = Header(None),
+                     x_teacher_key: str = Header(None)):
+    await require_owner(student_name, authorization, x_teacher_key)
     student_info = get_student_info(student_name)
     monthly_count = get_monthly_count(student_name)
     remaining = max(0, MONTHLY_LIMIT - monthly_count)
@@ -344,9 +1298,10 @@ async def get_status(student_name: str):
     }
 
 @app.post("/api/chat")
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, authorization: str = Header(None)):
     if not request.student_name or not request.message:
         raise HTTPException(status_code=400, detail="名前とメッセージが必要です")
+    await require_owner(request.student_name, authorization)
 
     student_info = get_student_info(request.student_name)
     if student_info and student_info.get("end_date"):
@@ -416,7 +1371,9 @@ async def chat(request: ChatRequest):
     return StreamingResponse(generate(), media_type="text/event-stream")
 
 @app.get("/api/progress/{student_name}")
-async def get_progress(student_name: str):
+async def get_progress(student_name: str, authorization: str = Header(None),
+                       x_teacher_key: str = Header(None)):
+    await require_owner(student_name, authorization, x_teacher_key)
     try:
         result = supabase.table("progress").select("completed").eq("student_name", student_name).execute()
         if result.data:
@@ -430,7 +1387,8 @@ class ProgressRequest(BaseModel):
     completed: list
 
 @app.post("/api/progress")
-async def update_progress(request: ProgressRequest):
+async def update_progress(request: ProgressRequest, authorization: str = Header(None)):
+    await require_owner(request.student_name, authorization)
     try:
         supabase.table("progress").upsert({
             "student_name": request.student_name,
@@ -440,12 +1398,41 @@ async def update_progress(request: ProgressRequest):
         print(f"❌ 進捗保存エラー: {e}")
     return {"status": "ok"}
 
+@app.get("/api/video-progress/{student_name}")
+async def get_video_progress(student_name: str, authorization: str = Header(None),
+                             x_teacher_key: str = Header(None)):
+    await require_owner(student_name, authorization, x_teacher_key)
+    try:
+        result = supabase.table("video_progress").select("watched").eq("student_name", student_name).execute()
+        if result.data:
+            return {"watched": result.data[0]["watched"]}
+    except Exception as e:
+        print(f"❌ 動画進捗取得エラー: {e}")
+    return {"watched": []}
+
+class VideoProgressRequest(BaseModel):
+    student_name: str
+    watched: list
+
+@app.post("/api/video-progress")
+async def update_video_progress(request: VideoProgressRequest, authorization: str = Header(None)):
+    await require_owner(request.student_name, authorization)
+    try:
+        supabase.table("video_progress").upsert({
+            "student_name": request.student_name,
+            "watched": request.watched
+        }).execute()
+    except Exception as e:
+        print(f"❌ 動画進捗保存エラー: {e}")
+    return {"status": "ok"}
+
 @app.get("/teacher")
 async def teacher_page():
     return FileResponse("static/teacher.html")
 
 @app.get("/api/summary/{student_name}")
-async def get_summary(student_name: str):
+async def get_summary(student_name: str, x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
     history = load_conversation(student_name)
     if not history:
         return {"summary": None, "last_date": None, "message_count": 0}
@@ -488,12 +1475,15 @@ async def get_summary(student_name: str):
         return {"summary": None, "message_count": 0, "error": str(e)}
 
 @app.get("/api/conversation/{student_name}")
-async def get_conversation(student_name: str):
+async def get_conversation(student_name: str, authorization: str = Header(None),
+                           x_teacher_key: str = Header(None)):
+    await require_owner(student_name, authorization, x_teacher_key)
     history = load_conversation(student_name)
     return {"messages": history, "count": len(history)}
 
 @app.post("/api/reset")
-async def reset_conversation(request: ResetRequest):
+async def reset_conversation(request: ResetRequest, authorization: str = Header(None)):
+    await require_owner(request.student_name, authorization)
     try:
         supabase.table("conversations").delete().eq("student_name", request.student_name).execute()
     except Exception as e:
@@ -508,7 +1498,8 @@ class SubmissionRequest(BaseModel):
     url: Optional[str] = None
 
 @app.post("/api/submit")
-async def submit_assignment(request: SubmissionRequest):
+async def submit_assignment(request: SubmissionRequest, authorization: str = Header(None)):
+    await require_owner(request.student_name, authorization)
     try:
         supabase.table("submissions").insert({
             "student_name": request.student_name,
@@ -524,7 +1515,9 @@ async def submit_assignment(request: SubmissionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/submissions/{student_name}")
-async def get_submissions(student_name: str):
+async def get_submissions(student_name: str, authorization: str = Header(None),
+                          x_teacher_key: str = Header(None)):
+    await require_owner(student_name, authorization, x_teacher_key)
     try:
         result = supabase.table("submissions").select("*").eq("student_name", student_name).order("submitted_at", desc=True).execute()
         return {"submissions": result.data}
@@ -533,7 +1526,8 @@ async def get_submissions(student_name: str):
         return {"submissions": []}
 
 @app.get("/api/all-submissions")
-async def get_all_submissions():
+async def get_all_submissions(x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
     try:
         result = supabase.table("submissions").select("*").order("submitted_at", desc=True).execute()
         return {"submissions": result.data}

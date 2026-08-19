@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ようこそ | Photelier サロン</title>
+<link rel="stylesheet" href="/static/design-tokens.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--cream); color: var(--text);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .box { width: 100%; max-width: 440px; background: #fff; border: 1px solid var(--line);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 40px 34px; text-align: center; }
+  .logo { font-family: var(--script); font-size: 30px; color: var(--blue-deep); margin-bottom: 6px; }
+  .sub { font-size: 11px; letter-spacing: .28em; color: var(--text-soft); text-transform: uppercase; }
+  h1 { font-family: var(--serif); font-size: 22px; font-weight: 600; letter-spacing: .04em;
+    margin: 26px 0 10px; line-height: 1.6; }
+  .lead { font-size: 13.5px; line-height: 1.9; color: var(--text-soft); margin-bottom: 26px; }
+  .field { text-align: left; margin-bottom: 18px; }
+  label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; }
+  .hint { font-size: 11.5px; color: var(--text-soft); font-weight: 400; margin-left: 6px; }
+  input { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px;
+    font-family: var(--sans); font-size: 15px; color: var(--text); background: #fff; outline: none; }
+  input:focus { border-color: var(--blue); }
+  input:disabled { background: var(--hero-bg); color: var(--text-soft); }
+  button { width: 100%; padding: 14px; background: var(--blue); color: #fff; border: none;
+    border-radius: 8px; font-family: var(--sans); font-size: 15px; letter-spacing: .06em;
+    cursor: pointer; margin-top: 6px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .msg { font-size: 13px; line-height: 1.8; margin-top: 18px; }
+  .msg.error { color: #B4553F; }
+  .state { font-size: 13.5px; line-height: 1.9; color: var(--text-soft); }
+  a { color: var(--blue-deep); }
+  .line-block { background: var(--hero-bg); border-radius: 10px; padding: 20px 18px; margin: 4px 0 20px; }
+  .line-lead { font-size: 12.5px; line-height: 1.9; color: var(--text-soft); margin-bottom: 14px; }
+  .line-btn { display: block; padding: 13px; background: #06C755; color: #fff; text-decoration: none;
+    border-radius: 8px; font-size: 14.5px; letter-spacing: .04em; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo">Photelier&nbsp;Academy</div>
+    <div class="sub">Salon</div>
+
+    <div id="loading" class="state" style="margin-top:26px;">お支払いを確認しています…</div>
+
+    <div id="form-area" style="display:none;">
+      <h1>ご入会ありがとうございます</h1>
+      <p class="lead">最後に、ログイン用のパスワードを決めてください。<br>次回からはこのメールアドレスとパスワードでお入りいただけます。</p>
+      <div class="field">
+        <label>メールアドレス</label>
+        <input type="email" id="email" disabled>
+      </div>
+      <div class="field">
+        <label>お名前<span class="hint">画面に表示されます</span></label>
+        <input type="text" id="name" placeholder="例）おがたさちえ">
+      </div>
+      <div class="field">
+        <label>パスワード<span class="hint">8文字以上</span></label>
+        <input type="password" id="password" placeholder="半角英数字で8文字以上">
+      </div>
+      <button id="submit" onclick="complete()">はじめる</button>
+      <div id="msg" class="msg"></div>
+    </div>
+
+    <div id="done-area" style="display:none;">
+      <h1>ようこそ、Photelier サロンへ</h1>
+      <p class="lead">ご登録が完了しました。<br>これから、いっしょに世界観をつくっていきましょう。</p>
+
+      <div id="line-block" class="line-block" style="display:none;">
+        <p class="line-lead">サロンのお知らせは、LINEでもお届けしています。<br>新しい動画や勉強会のご案内が届きます。</p>
+        <a id="line-btn" class="line-btn" href="#" target="_blank" rel="noopener">LINEでお知らせを受け取る</a>
+      </div>
+
+      <!-- replace にしておくと、あとで「戻る」を押してもこの登録画面には戻らない -->
+      <button onclick="location.replace('/upsell')">サロンへすすむ</button>
+    </div>
+
+    <div id="error-area" style="display:none;">
+      <h1>確認できませんでした</h1>
+      <p class="state" id="error-text"></p>
+      <p class="state" style="margin-top:14px;">お手数ですが、さちえ先生にご連絡ください。</p>
+    </div>
+  </div>
+
+<script>
+// ★ここに公式LINEの登録URL（https://lin.ee/... ）を入れてください。
+//   空のままだと、LINEのご案内は表示されません（画面は壊れません）。
+const LINE_URL = '';
+
+const sessionId = new URLSearchParams(location.search).get('session_id');
+
+function showError(text) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('form-area').style.display = 'none';
+  document.getElementById('error-area').style.display = 'block';
+  document.getElementById('error-text').textContent = text;
+}
+
+async function boot() {
+  if (!sessionId) return showError('お申し込み情報が見つかりませんでした。');
+  try {
+    const res = await fetch('/api/checkout/' + encodeURIComponent(sessionId));
+    const data = await res.json();
+    if (!res.ok) return showError(data.detail || 'お支払いを確認できませんでした。');
+    if (data.already_registered) {
+      location.href = '/';
+      return;
+    }
+    document.getElementById('email').value = data.email;
+    document.getElementById('name').value = data.name;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('form-area').style.display = 'block';
+    document.getElementById('name').focus();
+  } catch (e) {
+    showError('通信に失敗しました。ページを再読み込みしてみてください。');
+  }
+}
+
+async function complete() {
+  const name = document.getElementById('name').value.trim();
+  const password = document.getElementById('password').value;
+  const msg = document.getElementById('msg');
+  const btn = document.getElementById('submit');
+  msg.className = 'msg';
+  msg.textContent = '';
+  if (!name) { msg.className = 'msg error'; msg.textContent = 'お名前を入れてください'; return; }
+  if (password.length < 8) { msg.className = 'msg error'; msg.textContent = 'パスワードは8文字以上にしてください'; return; }
+
+  btn.disabled = true;
+  msg.textContent = '登録しています…';
+  try {
+    const res = await fetch('/api/signup-complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, name, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      msg.className = 'msg error';
+      msg.textContent = data.detail || '登録に失敗しました';
+      btn.disabled = false;
+      return;
+    }
+    localStorage.setItem('photelier_token', data.token);
+    // LINEのご案内をお見せしてから、サロンへ進んでいただく
+    document.getElementById('form-area').style.display = 'none';
+    if (LINE_URL) {
+      document.getElementById('line-btn').href = LINE_URL;
+      document.getElementById('line-block').style.display = 'block';
+    }
+    document.getElementById('done-area').style.display = 'block';
+  } catch (e) {
+    msg.className = 'msg error';
+    msg.textContent = '通信に失敗しました。もう一度お試しください。';
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') complete(); });
+boot();
+</script>
+</body>
+</html>

@@ -1,5 +1,21 @@
 .env
+.env.*
 __pycache__/
 *.pyc
 .DS_Store
 conversations/
+
+.venv/
+
+# バックアップ・作業ファイル
+*.bak
+*.bak_*
+mock/
+static/mock-assets/
+
+# 手元用の内部メモ（公開リポジトリなので上げない）
+公開前チェックリスト.md
+8月28日_サロンご案内台本.md
+セミナー切り出しメモ.md
+セミナー切り出し.sh
+CLAUDE.md

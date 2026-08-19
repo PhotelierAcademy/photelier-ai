@@ -1,0 +1,168 @@
+/* ============================================================
+   Photelier 共通デザイントークン
+   出典: https://www.photelier.jp/ + リールテンプレ確定カラー
+   このファイルは photelier-ai / テイスト診断 / ファネル診断 の
+   3アプリ共通の「世界観」を1つに揃えるための土台。
+   どのツールに来ても同じ世界に見えるようにする（つぎはぎ回避）。
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&family=Pinyon+Script&display=swap');
+
+:root {
+  /* --- 色（photelier.jp / style.css 準拠） --- */
+  --cream:      #FBF8F3;  /* 背景の主役：クリーム/オフホワイト */
+  --cream-2:    #F3EDE4;  /* セクション背景の切替 */
+  --hero-bg:    #E8EFF4;  /* ヘッダー等の淡いブルーグレー帯 */
+  --text:       #3D5564;  /* 文字：ネイビー */
+  --text-soft:  #6E8494;  /* 補助テキスト */
+  --blue:       #6B9BB5;  /* アクセント：くすみブルー（CTA/ピル） */
+  --blue-deep:  #4E7E98;  /* アクセント濃（hover） */
+  --gold:       #C7A97B;  /* 差し色：くすんだゴールド（✦モチーフ） */
+  --line:       #E3DACE;  /* 罫線：やわらかいベージュ */
+  --white:      #FFFFFF;
+  --shadow:     0 8px 30px rgba(61, 85, 100, 0.08);
+  --shadow-sm:  0 2px 10px rgba(61, 85, 100, 0.06);
+
+  /* --- フォント --- */
+  --serif:  'Shippori Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --sans:   'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'メイリオ', sans-serif;
+  --script: 'Pinyon Script', cursive; /* ロゴ用の筆記体 */
+
+  /* --- かたち --- */
+  --radius:    14px;
+  --radius-lg: 22px;
+  /* カード・タイル・動画枠の共通の顔（動画教材サイトの上品な枠が手本） */
+  --radius-card: 4px;
+  --line-soft:   rgba(107,155,181,.22);
+  --shadow-card: 0 14px 30px -16px rgba(61,85,100,.26);
+  --gap:       clamp(16px, 4vw, 40px); /* 余白たっぷり */
+}
+
+/* 見出しは明朝で上品に */
+.ph-serif { font-family: var(--serif); color: var(--text); letter-spacing: .04em; font-weight: 600; }
+
+/* ロゴ（筆記体 Photelier Academy） */
+.ph-logo {
+  font-family: var(--script);
+  color: var(--text);
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: .01em;
+}
+
+/* ✦ ディバイダ（photelier.jp のダイヤモンドモチーフ） */
+.ph-divider {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; color: var(--gold); font-size: 13px; margin: var(--gap) 0;
+}
+.ph-divider::before, .ph-divider::after {
+  content: ""; height: 1px; width: min(120px, 22vw); background: var(--line);
+}
+
+/* 控えめCTA（矢印→つき・photelier.jpトーン） */
+.ph-btn {
+  font-family: var(--sans);
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 26px; border-radius: 999px;
+  background: var(--blue); color: var(--white);
+  border: none; font-size: 15px; font-weight: 600; letter-spacing: .03em;
+  cursor: pointer; transition: background .2s, transform .2s;
+  text-decoration: none;
+}
+.ph-btn:hover { background: var(--blue-deep); transform: translateY(-1px); }
+.ph-btn--ghost {
+  background: transparent; color: var(--blue-deep);
+  border: 1px solid var(--blue); }
+.ph-btn--ghost:hover { background: var(--hero-bg); }
+.ph-btn__arrow { font-size: 15px; }
+
+/* カード */
+.ph-card {
+  background: var(--white); border: 1px solid var(--line-soft);
+  border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+}
+
+/* ============================================================
+   動画教材サイトの世界観に合わせたパーツ（本人の既存デザインが手本）
+   ============================================================ */
+
+/* クリームのダマスク地（教材サイトの背景。淡い模様＋余白） */
+.ph-bg {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255,255,255,.6) 0, transparent 40%),
+    var(--cream);
+}
+
+/* 青いリボン帯の見出し（教材サイトの「あなたの"やりたい"を…」帯） */
+.ph-ribbon {
+  display: inline-block; position: relative;
+  background: var(--blue); color: var(--white);
+  font-family: var(--serif); font-weight: 600; letter-spacing: .12em;
+  padding: 15px 40px; font-size: clamp(16px, 2.4vw, 22px);
+  box-shadow: var(--shadow-sm);
+}
+.ph-ribbon::before, .ph-ribbon::after {
+  content: ""; position: absolute; top: 0; width: 18px; height: 100%;
+  background: var(--blue-deep);
+}
+.ph-ribbon::before { left: -18px; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 100% 50%); }
+.ph-ribbon::after  { right: -18px; clip-path: polygon(0 0, 100% 0, 0 50%, 100% 100%, 0 100%); }
+
+/* 英語サブ見出しつきラベル（Category / Introduction / Worldview の型） */
+.ph-eyebrow {
+  font-family: var(--sans); color: var(--blue-deep);
+  font-size: 12px; letter-spacing: .28em; text-transform: uppercase;
+  text-align: center; margin-bottom: 6px;
+}
+.ph-heading { font-family: var(--serif); color: var(--text);
+  font-weight: 600; letter-spacing: .06em; text-align: center; }
+
+/* 写真つきカテゴリカード（教材サイトの「カテゴリから学ぶ」タイル） */
+.ph-tile {
+  position: relative; overflow: hidden; border-radius: var(--radius-card);
+  background: linear-gradient(118deg, #ffffff 0%, #ffffff 42%, #e9f0f5 100%);
+  border: 1px solid var(--line-soft); box-shadow: var(--shadow-card);
+  transition: transform .2s, box-shadow .2s;
+  cursor: pointer;
+}
+.ph-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.ph-tile__ja { font-family: var(--serif); color: var(--text); font-weight: 600; }
+.ph-tile__en { font-family: var(--sans); color: var(--text-soft);
+  font-size: 11px; letter-spacing: .22em; text-transform: uppercase; }
+
+/* ダッシュ付き英語ラベル（教材サイトの「—— Step」「—— Documents」の型） */
+.ph-eyebrow--dash {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-family: var(--sans); color: var(--blue-deep);
+  font-size: 12px; letter-spacing: .22em; text-transform: uppercase; text-align: left;
+}
+.ph-eyebrow--dash::before { content: ""; width: 26px; height: 1px; background: var(--blue-deep); }
+
+/* 丸い » 矢印ボタン（教材サイトのカード右下の丸ボタン） */
+.ph-arrow {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  background: var(--hero-bg); color: var(--blue-deep);
+  display: grid; place-items: center; font-size: 16px;
+  border: 1px solid var(--line); transition: background .2s, color .2s;
+}
+.ph-arrow:hover { background: var(--blue); color: var(--white); }
+
+/* ヒーロー帯（教材サイトのトップ：左テキスト＋右写真） */
+.ph-hero {
+  display: grid; grid-template-columns: 1.05fr .95fr; align-items: stretch;
+  background: linear-gradient(100deg, var(--hero-bg) 0%, var(--hero-bg) 40%, transparent 66%);
+  border-bottom: 1px solid var(--line);
+}
+.ph-hero__text { padding: clamp(28px,5vw,56px); align-self: center; }
+.ph-hero__sub { color: var(--blue-deep); font-family: var(--serif); font-size: clamp(15px,2vw,19px); letter-spacing: .06em; margin-bottom: 10px; }
+.ph-hero__title { font-family: var(--serif); color: var(--text); font-weight: 700; font-size: clamp(28px,5vw,46px); letter-spacing: .1em; line-height: 1.25; }
+.ph-hero__by { display: flex; align-items: center; gap: 14px; color: var(--text-soft); font-family: var(--serif); font-size: 14px; letter-spacing: .1em; margin-top: 16px; }
+.ph-hero__by::before { content: ""; width: 46px; height: 1px; background: var(--text-soft); }
+.ph-hero__photo { background-size: cover; background-position: center; min-height: 260px;
+  -webkit-mask-image: linear-gradient(100deg, transparent 2%, rgba(0,0,0,.28) 24%, #000 54%);
+  mask-image: linear-gradient(100deg, transparent 2%, rgba(0,0,0,.28) 24%, #000 54%); }
+@media(max-width:640px){
+  .ph-hero { grid-template-columns: 1fr; background: var(--hero-bg); }
+  .ph-hero__photo { min-height: 180px; order: -1;
+    -webkit-mask-image: none; mask-image: none; }
+}

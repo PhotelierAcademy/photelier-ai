@@ -9,27 +9,27 @@
 
     body {
       font-family: 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
-      background: #f0f4f6;
+      background: #FBF8F3;
       min-height: 100dvh;
     }
 
     header {
-      background: white;
-      border-bottom: 1px solid #d5e5eb;
+      background: #E8EFF4;
+      border-bottom: 1px solid #E3DACE;
       padding: 14px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      box-shadow: 0 1px 4px rgba(61,85,100,0.06);
     }
 
     .logo {
       font-size: 18px;
       font-weight: 700;
-      color: #2c4a58;
+      color: #3D5564;
     }
 
-    .logo span { color: #5d8fa3; }
+    .logo span { color: #4E7E98; }
 
     .badge {
       background: linear-gradient(135deg, #5d8fa3, #3d7080);
@@ -124,6 +124,27 @@
       border-radius: 12px;
     }
 
+    .vid-count {
+      font-size: 13px;
+      color: #6b5a3a;
+      background: #f3ecd9;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    .video-progress-wrap { margin: 16px 0; }
+    .video-progress-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .video-progress-title { font-size: 11px; font-weight: 700; color: #5d8fa3; text-transform: uppercase; letter-spacing: .5px; }
+    .video-progress-total { font-size: 12px; color: #4a6070; }
+    .video-cat-list { display: flex; flex-direction: column; gap: 7px; }
+    .video-cat-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #2c4a58; }
+    .video-cat-name { width: 150px; flex-shrink: 0; }
+    .video-cat-bar-wrap { flex: 1; height: 6px; background: #e0edf2; border-radius: 4px; overflow: hidden; }
+    .video-cat-bar { height: 100%; border-radius: 4px; background: linear-gradient(135deg, #5d8fa3, #3d7080); }
+    .video-cat-row.stuck .video-cat-bar { background: #d9a441; }
+    .video-cat-row.stuck .video-cat-name { color: #a3721f; font-weight: 600; }
+    .video-cat-num { width: 46px; text-align: right; color: #8aabbf; flex-shrink: 0; }
+
     .refresh-btn {
       padding: 6px 14px;
       background: linear-gradient(135deg, #5d8fa3, #3d7080);
@@ -153,6 +174,20 @@
     }
 
     .card-body.open { display: block; }
+
+    .salon-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 8px;
+    }
+    @media (max-width: 700px) {
+      .salon-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    .stat {
+      background: #fff; border-radius: 12px; padding: 18px 14px; text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+    }
+    .stat__num { font-size: 30px; font-weight: 700; line-height: 1.2; }
+    .stat__num small { font-size: 14px; font-weight: 500; margin-left: 2px; }
+    .stat__label { font-size: 12px; color: #888; margin-top: 6px; }
 
     .summary-grid {
       display: grid;
@@ -459,6 +494,103 @@
       word-break: break-all;
     }
     .sub-card-url:hover { text-decoration: underline; }
+    /* 質問会アーカイブ */
+    .qa-panel {
+      background: #fff;
+      border: 1px solid #d7e6ec;
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .qa-form {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px 16px;
+      align-items: end;
+    }
+    .qa-form label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 13px;
+      color: #4a7a8a;
+    }
+    .qa-form label.wide { grid-column: 1 / -1; }
+    .qa-form input {
+      border: 1px solid #d7e6ec;
+      border-radius: 8px;
+      padding: 9px 11px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #2c5f70;
+    }
+    .qa-add {
+      grid-column: 1 / -1;
+      justify-self: start;
+      background: #6B9BB5;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 11px 26px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .qa-add:disabled { opacity: .5; cursor: default; }
+    .qa-form textarea {
+      border: 1px solid #d7e6ec;
+      border-radius: 8px;
+      padding: 9px 11px;
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 1.85;
+      color: #2c5f70;
+      resize: vertical;
+    }
+    .qa-row__body-sm { color: #7a9aa8; font-size: 12.5px; white-space: pre-wrap; margin-top: 3px; }
+    #qa-list { margin-top: 18px; }
+    .qa-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 0;
+      border-top: 1px solid #eef4f6;
+      font-size: 14px;
+      color: #2c5f70;
+    }
+    .qa-row__date { color: #7a9aa8; font-size: 13px; min-width: 92px; }
+    .qa-row__title { flex: 1; }
+    .qa-row__note { color: #7a9aa8; font-size: 12px; }
+    .qa-row__del {
+      background: none; border: none; cursor: pointer;
+      color: #b08a8a; font-size: 13px; font-family: inherit;
+    }
+    @media (max-width: 640px) {
+      .qa-form { grid-template-columns: 1fr; }
+    }
+    /* 事前にいただいた質問 */
+    .qq-group { margin-bottom: 22px; }
+    .qq-group:last-child { margin-bottom: 0; }
+    .qq-group__head {
+      font-size: 13px; color: #4a7a8a; font-weight: 600;
+      padding-bottom: 8px; border-bottom: 1px solid #d7e6ec;
+    }
+    .qq-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 13px 0; border-bottom: 1px solid #eef4f6;
+    }
+    .qq-row.done { opacity: .45; }
+    .qq-row__who { min-width: 110px; font-size: 12.5px; color: #7a9aa8; padding-top: 2px; }
+    .qq-row__body { flex: 1; font-size: 14px; line-height: 1.85; color: #2c5f70; white-space: pre-wrap; }
+    .qq-row__btn {
+      background: none; border: 1px solid #d7e6ec; border-radius: 999px;
+      padding: 5px 14px; font-size: 12.5px; font-family: inherit;
+      color: #4a7a8a; cursor: pointer; white-space: nowrap;
+    }
+    .qq-row__btn:hover { background: #f4fafc; }
+    @media (max-width: 640px) {
+      .qq-row { flex-wrap: wrap; }
+      .qq-row__body { flex: 1 1 100%; order: 3; }
+    }
     #sub-empty {
       text-align: center;
       padding: 40px;
@@ -475,7 +607,57 @@
 </header>
 
 <div class="container">
-  <h1>受講生の相談まとめ 📋</h1>
+  <h1>サロンの数字 📊</h1>
+  <p class="subtitle">50人たまるまでは、数えるだけでOK。ここで文章をいじらないこと😊</p>
+  <div class="salon-stats" id="salon-stats">
+    <div class="loading">読み込み中...</div>
+  </div>
+
+  <h1 style="margin-top:44px;">会員さん・受講生 👤</h1>
+  <p class="subtitle">本講座の受講生は、ここで1人ずつ作ります。最初のパスワードはさちえ先生が決めて、ご本人にお伝えしてください（ご本人があとから変えられます）。作った方は最初から全部の動画が見られます😊</p>
+  <div class="qa-panel">
+    <div class="qa-form">
+      <label>お名前<input type="text" id="mem-name" placeholder="えりさん"></label>
+      <label>メールアドレス<input type="email" id="mem-email" placeholder="eri@example.com"></label>
+      <label>最初のパスワード<input type="text" id="mem-pass" placeholder="8文字以上"></label>
+      <label>サポートの終わる日<input type="date" id="mem-end"></label>
+      <button class="qa-add" id="mem-add-btn" onclick="addMember()">この受講生を作る</button>
+    </div>
+    <div id="mem-list"><div class="loading">読み込み中...</div></div>
+  </div>
+
+  <h1 style="margin-top:44px;">サロンのお知らせ 📢</h1>
+  <p class="subtitle">ここに書くと、サロンのホーム画面のいちばん上に出ます。在籍中の会員さんだけに届きます😊</p>
+  <div class="qa-panel">
+    <div class="qa-form">
+      <label class="wide">タイトル<input type="text" id="ann-title" placeholder="9月の質問会について"></label>
+      <label class="wide">本文<textarea id="ann-body" rows="4" placeholder="改行はそのまま表示されます。"></textarea></label>
+      <button class="qa-add" id="ann-add-btn" onclick="addAnn()">お知らせを出す</button>
+    </div>
+    <div id="ann-list"><div class="loading">読み込み中...</div></div>
+  </div>
+
+  <h1 style="margin-top:44px;">質問会にいただいた質問 💬</h1>
+  <p class="subtitle" id="qq-lead">会員さんがサロンから送ってくれた質問です。答えた分は「答えた」を押すと下に下がります😊</p>
+  <div class="qa-panel">
+    <div id="qq-list"><div class="loading">読み込み中...</div></div>
+  </div>
+
+  <h1 style="margin-top:44px;">質問会アーカイブ 🎥</h1>
+  <p class="subtitle">質問会が終わったらVimeoに上げて、ここに1行足すだけ。サロンの「質問会アーカイブ」にすぐ並びます😊</p>
+  <div class="qa-panel">
+    <div class="qa-form">
+      <label>開催日<input type="date" id="qa-date"></label>
+      <label>タイトル<input type="text" id="qa-title" placeholder="8月の質問会"></label>
+      <label>VimeoのID<input type="text" id="qa-vimeo" placeholder="123456789"></label>
+      <label>限定公開のハッシュ<input type="text" id="qa-hash" placeholder="なければ空でOK"></label>
+      <label class="wide">メモ（動画の下に出ます）<input type="text" id="qa-note" placeholder="ライティング／リールの見せ方 など"></label>
+      <button class="qa-add" id="qa-add-btn" onclick="addQa()">この回を追加する</button>
+    </div>
+    <div id="qa-list"><div class="loading">読み込み中...</div></div>
+  </div>
+
+  <h1 style="margin-top:44px;">受講生の相談まとめ 📋</h1>
   <p class="subtitle">個別コンサル前に確認してね。各カードをクリックすると詳細が見られるよ😊</p>
 
   <button class="reload-all-btn" onclick="loadAllStudents()">🔄 全員分を更新する</button>
@@ -512,6 +694,54 @@
 <script>
   let studentsData = [];
 
+  // ---- 先生用のパスワード ----
+  // このページは受講生の会話が全部見られるので、合言葉を1回だけ入れてもらう。
+  // 一度入れればこの端末に覚えます（違っていたら消してもう一度聞きます）。
+  function teacherKey() {
+    let key = localStorage.getItem('photelier_teacher_key');
+    if (!key) {
+      key = (prompt('先生用のパスワードを入力してください') || '').trim();
+      if (key) localStorage.setItem('photelier_teacher_key', key);
+    }
+    return key || '';
+  }
+
+  function tHeaders() { return { 'X-Teacher-Key': teacherKey() }; }
+
+  function checkAuth(res) {
+    if (res.status === 401) {
+      const had = localStorage.getItem('photelier_teacher_key');
+      localStorage.removeItem('photelier_teacher_key');
+      // 入力をキャンセルしたときに、聞き直しがぐるぐる回らないようにする
+      if (had) {
+        alert('パスワードが違うようです。もう一度お試しください。');
+        location.reload();
+      }
+      throw new Error('unauthorized');
+    }
+    return res;
+  }
+
+  async function loadSalonStats() {
+    const box = document.getElementById('salon-stats');
+    try {
+      const res = checkAuth(await fetch('/api/salon-stats', { headers: tHeaders() }));
+      const s = await res.json();
+      box.innerHTML = `
+        <div class="stat"><div class="stat__num">${s.joined}<small>人</small></div>
+          <div class="stat__label">入会（のべ）</div></div>
+        <div class="stat"><div class="stat__num">${s.active}<small>人</small></div>
+          <div class="stat__label">今いる人</div></div>
+        <div class="stat"><div class="stat__num">${s.unlocked}<small>人</small></div>
+          <div class="stat__label">全開放した人</div></div>
+        <div class="stat"><div class="stat__num">${s.unlock_rate}<small>%</small></div>
+          <div class="stat__label">全開放の率（目標5〜10%）</div></div>
+      `;
+    } catch (e) {
+      box.innerHTML = '<div class="no-data">数字を読み込めませんでした</div>';
+    }
+  }
+
   async function loadAllStudents() {
     const grid = document.getElementById('student-grid');
     grid.innerHTML = '<div class="loading">読み込み中...</div>';
@@ -547,6 +777,7 @@
         </div>
         <div class="card-right">
           <span class="msg-count" id="count-${name}">-</span>
+          <span class="vid-count" id="vid-count-${name}">🎬 -</span>
           <button class="chat-btn" onclick="event.stopPropagation(); openConv('${name}')">💬 会話を見る</button>
           <button class="submit-view-btn" onclick="event.stopPropagation(); openSub('${name}')">📝 提出物</button>
           <button class="refresh-btn" onclick="event.stopPropagation(); loadSummary('${name}', true)">要約を取得</button>
@@ -554,22 +785,33 @@
         </div>
       </div>
       <div class="card-body" id="body-${name}">
-        <div class="no-data">「要約を取得」ボタンを押してね😊</div>
+        <div id="video-block-${name}"></div>
+        <div id="summary-block-${name}"><div class="no-data">「要約を取得」ボタンを押してね😊</div></div>
       </div>
     `;
     return div;
   }
 
   const TOTAL_TASKS = 37;
+  let VIDEO_LIB = null;
+
+  async function loadVideoLib() {
+    try {
+      const res = await fetch('/api/library', { headers: tHeaders() });
+      VIDEO_LIB = await res.json();
+    } catch { VIDEO_LIB = { categories: [] }; }
+  }
 
   async function loadStudentStatus(name) {
     try {
-      const [statusRes, progressRes] = await Promise.all([
-        fetch(`/api/status/${encodeURIComponent(name)}`),
-        fetch(`/api/progress/${encodeURIComponent(name)}`)
+      const [statusRes, progressRes, videoRes] = await Promise.all([
+        fetch(`/api/status/${encodeURIComponent(name)}`, { headers: tHeaders() }),
+        fetch(`/api/progress/${encodeURIComponent(name)}`, { headers: tHeaders() }),
+        fetch(`/api/video-progress/${encodeURIComponent(name)}`, { headers: tHeaders() })
       ]);
       const status = await statusRes.json();
       const progress = await progressRes.json();
+      const video = await videoRes.json();
       const completed = (progress.completed || []).length;
       const pct = Math.round(completed / TOTAL_TASKS * 100);
 
@@ -587,7 +829,47 @@
         <span style="font-weight:600;color:#1c2b35">${completed}/${TOTAL_TASKS}件</span>
         <span style="color:#4a7a8a;font-size:11px">（${pct}%）</span>
       `;
+
+      renderVideoBlock(name, video.watched || []);
     } catch {}
+  }
+
+  function renderVideoBlock(name, watchedList) {
+    const watched = new Set((watchedList || []).map(String));
+    const cats = (VIDEO_LIB && VIDEO_LIB.categories) || [];
+    const totalVideos = cats.reduce((sum, c) => sum + c.videos.length, 0);
+    const totalWatched = cats.reduce((sum, c) => sum + c.videos.filter(v => watched.has(String(v.id))).length, 0);
+
+    const vidCountEl = document.getElementById(`vid-count-${name}`);
+    if (vidCountEl) {
+      const pct = totalVideos ? Math.round(totalWatched / totalVideos * 100) : 0;
+      vidCountEl.innerHTML = `🎬 ${totalWatched}/${totalVideos}<span style="color:#a89463;font-size:11px"> (${pct}%)</span>`;
+    }
+
+    const block = document.getElementById(`video-block-${name}`);
+    if (!block || !cats.length) return;
+
+    const rows = cats.map(c => {
+      const n = c.videos.length;
+      const w = c.videos.filter(v => watched.has(String(v.id))).length;
+      const pct = n ? Math.round(w / n * 100) : 0;
+      const stuck = n > 0 && w === 0;
+      return `<div class="video-cat-row ${stuck ? 'stuck' : ''}">
+        <div class="video-cat-name">${escapeHtml(c.ja)}</div>
+        <div class="video-cat-bar-wrap"><div class="video-cat-bar" style="width:${pct}%"></div></div>
+        <div class="video-cat-num">${w}/${n}</div>
+      </div>`;
+    }).join('');
+
+    block.innerHTML = `
+      <div class="video-progress-wrap">
+        <div class="video-progress-head">
+          <div class="video-progress-title">🎬 動画視聴の状況（黄色＝未着手）</div>
+          <div class="video-progress-total">合計 ${totalWatched}/${totalVideos}本</div>
+        </div>
+        <div class="video-cat-list">${rows}</div>
+      </div>
+    `;
   }
 
   function toggleCard(name) {
@@ -599,25 +881,26 @@
 
   async function loadSummary(name, forceOpen = false) {
     const body = document.getElementById(`body-${name}`);
+    const summaryBlock = document.getElementById(`summary-block-${name}`);
     const countEl = document.getElementById(`count-${name}`);
 
     body.classList.add('open');
     document.getElementById(`chevron-${name}`).classList.add('open');
-    body.innerHTML = '<div class="loading">✨ AIが要約を生成中...</div>';
+    summaryBlock.innerHTML = '<div class="loading">✨ AIが要約を生成中...</div>';
 
     try {
-      const res = await fetch(`/api/summary/${encodeURIComponent(name)}`);
+      const res = checkAuth(await fetch(`/api/summary/${encodeURIComponent(name)}`, { headers: tHeaders() }));
       const data = await res.json();
 
       countEl.textContent = data.message_count ? `${data.message_count}件の質問` : '質問なし';
 
       if (!data.summary) {
-        body.innerHTML = '<div class="no-data">📭 まだ会話履歴がないよ</div>';
+        summaryBlock.innerHTML = '<div class="no-data">📭 まだ会話履歴がないよ</div>';
         return;
       }
 
       const s = data.summary;
-      body.innerHTML = `
+      summaryBlock.innerHTML = `
         <div class="summary-grid">
           <div class="summary-item">
             <div class="summary-label">📝 主な悩み・相談内容</div>
@@ -638,7 +921,7 @@
         </div>
       `;
     } catch (e) {
-      body.innerHTML = '<div class="no-data">エラーが発生しました。もう一度試してね。</div>';
+      summaryBlock.innerHTML = '<div class="no-data">エラーが発生しました。もう一度試してね。</div>';
     }
   }
 
@@ -650,7 +933,7 @@
     modal.classList.add('open');
 
     try {
-      const res = await fetch(`/api/conversation/${encodeURIComponent(name)}`);
+      const res = await fetch(`/api/conversation/${encodeURIComponent(name)}`, { headers: tHeaders() });
       const data = await res.json();
 
       if (!data.messages || data.messages.length === 0) {
@@ -691,7 +974,7 @@
     modal.classList.add('open');
 
     try {
-      const res = await fetch(`/api/submissions/${encodeURIComponent(name)}`);
+      const res = await fetch(`/api/submissions/${encodeURIComponent(name)}`, { headers: tHeaders() });
       const data = await res.json();
 
       if (!data.submissions || data.submissions.length === 0) {
@@ -724,8 +1007,271 @@
     document.getElementById('sub-modal').classList.remove('open');
   }
 
+  // ---- 質問会にいただいた質問 ----
+  // 回ごとにまとめて、まだ答えていないものを上に出す。
+
+  function qqEscape(s) {
+    return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  function qqDateJa(iso) {
+    const [y, m, d] = iso.split('-').map(Number);
+    return `${y}年${m}月${d}日`;
+  }
+
+  async function loadQuestions() {
+    const box = document.getElementById('qq-list');
+    try {
+      const res = checkAuth(await fetch('/api/questions', { headers: tHeaders() }));
+      const data = await res.json();
+      if (data.ready === false) {
+        box.innerHTML = '<div class="no-data">準備がもう一歩です。Supabase の SQL Editor で <code>schema_questions.sql</code> を実行してください。</div>';
+        return;
+      }
+      const qs = data.questions || [];
+      if (qs.length === 0) {
+        box.innerHTML = '<div class="no-data">まだ質問は届いていません。最初の何回かは静かなのが普通です😊</div>';
+        return;
+      }
+      const groups = {};
+      qs.forEach(q => (groups[q.for_session] = groups[q.for_session] || []).push(q));
+      box.innerHTML = Object.keys(groups).sort().reverse().map(session => {
+        const rows = groups[session].slice().sort((a, b) => a.answered - b.answered);
+        const yet = rows.filter(r => !r.answered).length;
+        return `<div class="qq-group">
+          <div class="qq-group__head">${qqDateJa(session)}の回　　まだ答えていない質問 ${yet}件 / 全${rows.length}件</div>
+          ${rows.map(q => `
+            <div class="qq-row${q.answered ? ' done' : ''}">
+              <span class="qq-row__who">${qqEscape(q.name)}</span>
+              <span class="qq-row__body">${qqEscape(q.body)}</span>
+              <button class="qq-row__btn" onclick="markQuestion(${q.id}, ${!q.answered})">${q.answered ? '戻す' : '答えた'}</button>
+            </div>`).join('')}
+        </div>`;
+      }).join('');
+    } catch (e) {
+      box.innerHTML = '<div class="no-data">読み込めませんでした</div>';
+    }
+  }
+
+  async function markQuestion(id, answered) {
+    checkAuth(await fetch(`/api/questions/${id}?answered=${answered}`, {
+      method: 'PATCH', headers: tHeaders()
+    }));
+    loadQuestions();
+  }
+
+  // ---- 質問会アーカイブ ----
+  async function loadQa() {
+    const box = document.getElementById('qa-list');
+    try {
+      const res = await fetch('/api/qa-sessions');
+      const data = await res.json();
+      const sessions = data.sessions || [];
+      if (data.ready === false) {
+        box.innerHTML = '<div class="no-data">準備がもう一歩です。Supabase の SQL Editor で <code>schema_qa.sql</code> を実行してください。</div>';
+        return;
+      }
+      if (sessions.length === 0) {
+        box.innerHTML = '<div class="no-data">まだ1回もありません。最初の質問会が終わったら追加してね😊</div>';
+        return;
+      }
+      box.innerHTML = sessions.map(s => `
+        <div class="qa-row">
+          <span class="qa-row__date">${s.held_on}</span>
+          <span class="qa-row__title">${s.title}${s.note ? ` <span class="qa-row__note">${s.note}</span>` : ''}</span>
+          <button class="qa-row__del" onclick="deleteQa(${s.id}, '${s.title.replace(/'/g, "\\'")}')">削除</button>
+        </div>`).join('');
+    } catch (e) {
+      box.innerHTML = '<div class="no-data">読み込めませんでした</div>';
+    }
+  }
+
+  async function addQa() {
+    const btn = document.getElementById('qa-add-btn');
+    const held_on = document.getElementById('qa-date').value;
+    const title = document.getElementById('qa-title').value.trim();
+    const vimeo_id = document.getElementById('qa-vimeo').value.trim();
+    if (!held_on || !title || !vimeo_id) {
+      alert('開催日・タイトル・VimeoのID の3つは必要です');
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const res = checkAuth(await fetch('/api/qa-sessions', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, tHeaders()),
+        body: JSON.stringify({
+          held_on, title, vimeo_id,
+          vimeo_h: document.getElementById('qa-hash').value.trim(),
+          note: document.getElementById('qa-note').value.trim()
+        })
+      }));
+      if (!res.ok) {
+        alert((await res.json()).detail || '追加できませんでした');
+        return;
+      }
+      ['qa-date', 'qa-title', 'qa-vimeo', 'qa-hash', 'qa-note'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      loadQa();
+    } catch (e) {
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteQa(id, title) {
+    if (!confirm(`「${title}」を消します。よろしいですか？`)) return;
+    checkAuth(await fetch('/api/qa-sessions/' + id, { method: 'DELETE', headers: tHeaders() }));
+    loadQa();
+  }
+
+  // ---- サロンのお知らせ ----
+  function annEscape(s) {
+    return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  async function loadAnn() {
+    const box = document.getElementById('ann-list');
+    try {
+      const res = checkAuth(await fetch('/api/announcements/all', { headers: tHeaders() }));
+      const data = await res.json();
+      if (data.ready === false) {
+        box.innerHTML = '<div class="no-data">準備がもう一歩です。Supabase の SQL Editor で <code>schema_announcements.sql</code> を実行してください。</div>';
+        return;
+      }
+      const list = data.announcements || [];
+      if (list.length === 0) {
+        box.innerHTML = '<div class="no-data">まだお知らせはありません😊</div>';
+        return;
+      }
+      box.innerHTML = list.map(a => {
+        const d = new Date(a.created_at);
+        return `
+        <div class="qa-row" style="align-items:flex-start;">
+          <span class="qa-row__date">${d.getMonth() + 1}月${d.getDate()}日</span>
+          <span class="qa-row__title">${annEscape(a.title)}
+            <span class="qa-row__body-sm">${annEscape(a.body)}</span></span>
+          <button class="qa-row__del" onclick="deleteAnn(${a.id})">削除</button>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      box.innerHTML = '<div class="no-data">読み込めませんでした</div>';
+    }
+  }
+
+  async function addAnn() {
+    const btn = document.getElementById('ann-add-btn');
+    const title = document.getElementById('ann-title').value.trim();
+    const body = document.getElementById('ann-body').value.trim();
+    if (!title || !body) {
+      alert('タイトルと本文の両方を入れてください');
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const res = checkAuth(await fetch('/api/announcements', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, tHeaders()),
+        body: JSON.stringify({ title, body })
+      }));
+      if (!res.ok) {
+        alert((await res.json()).detail || '出せませんでした');
+        return;
+      }
+      document.getElementById('ann-title').value = '';
+      document.getElementById('ann-body').value = '';
+      loadAnn();
+    } catch (e) {
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteAnn(id) {
+    if (!confirm('このお知らせを消します。よろしいですか？')) return;
+    checkAuth(await fetch('/api/announcements/' + id, { method: 'DELETE', headers: tHeaders() }));
+    loadAnn();
+  }
+
+  // ---- 会員さん・受講生 ----
+  async function loadMembers() {
+    const box = document.getElementById('mem-list');
+    try {
+      const res = checkAuth(await fetch('/api/members', { headers: tHeaders() }));
+      const list = (await res.json()).members || [];
+      if (list.length === 0) {
+        box.innerHTML = '<div class="no-data">まだどなたもいません😊</div>';
+        return;
+      }
+      box.innerHTML = list.map(m => {
+        const kind = m.tier === 'course' ? '本講座' : 'サロン';
+        const state = m.active ? '在籍中' : '退会';
+        const end = m.support_end ? `／${m.support_end}まで` : '';
+        // みんなの部屋のお名前。退会された方を部屋から外すときに、これで探す
+        const room = m.openchat_name
+          ? `<br>🏠 みんなの部屋：${annEscape(m.openchat_name)}` : '';
+        return `
+        <div class="qa-row" style="align-items:flex-start;${m.active ? '' : 'opacity:.5;'}">
+          <span class="qa-row__date">${kind}</span>
+          <span class="qa-row__title">${annEscape(m.name || '')}
+            <span class="qa-row__body-sm">${annEscape(m.email)}／${state}${end}${room}</span></span>
+          <button class="qa-row__del" onclick="toggleMember('${m.id}', ${m.active ? 'false' : 'true'}, '${annEscape(m.name || '')}')">
+            ${m.active ? '退会にする' : '戻す'}</button>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      box.innerHTML = '<div class="no-data">読み込めませんでした</div>';
+    }
+  }
+
+  async function addMember() {
+    const btn = document.getElementById('mem-add-btn');
+    const name = document.getElementById('mem-name').value.trim();
+    const email = document.getElementById('mem-email').value.trim();
+    const password = document.getElementById('mem-pass').value;
+    const support_end = document.getElementById('mem-end').value;
+    if (!name || !email || !password) {
+      alert('お名前・メールアドレス・最初のパスワード の3つは必要です');
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const res = checkAuth(await fetch('/api/members', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, tHeaders()),
+        body: JSON.stringify({ name, email, password, support_end: support_end || null })
+      }));
+      if (!res.ok) {
+        alert((await res.json()).detail || '作れませんでした');
+        return;
+      }
+      alert(`${name}さんを作りました。\n\nメールアドレス：${email}\nパスワード：${password}\n\nこの2つをご本人にお伝えしてください😊`);
+      ['mem-name', 'mem-email', 'mem-pass', 'mem-end'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      loadMembers();
+    } catch (e) {
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function toggleMember(id, active, name) {
+    const msg = active
+      ? `${name}さんを在籍中に戻します。よろしいですか？`
+      : `${name}さんを退会にします。この方はすぐに入れなくなります。よろしいですか？`;
+    if (!confirm(msg)) return;
+    checkAuth(await fetch('/api/members/' + id, {
+      method: 'PATCH',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, tHeaders()),
+      body: JSON.stringify({ active })
+    }));
+    loadMembers();
+  }
+
   // 初回読み込み
-  loadAllStudents();
+  (async () => { loadSalonStats(); loadMembers(); loadAnn(); loadQuestions(); loadQa(); await loadVideoLib(); loadAllStudents(); })();
 </script>
 <!-- 画像拡大ライトボックス -->
 <div id="img-lightbox" onclick="closeLightbox()">

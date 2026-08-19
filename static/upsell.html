@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>ひとつだけ、ご案内があります | Photelier サロン</title>
+<link rel="stylesheet" href="/static/design-tokens.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--cream); color: var(--text);
+    font-size: 15px; line-height: 1.95; letter-spacing: .03em; padding: 0 0 60px; }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 0 22px; }
+
+  header { background: var(--hero-bg); padding: 30px 0 26px; text-align: center; }
+  .logo { font-family: var(--script); font-size: 30px; color: var(--blue-deep); line-height: 1.2; }
+  .sub { font-size: 10.5px; letter-spacing: .3em; color: var(--text-soft); margin-top: 4px; }
+
+  .state { text-align: center; padding: 70px 0; color: var(--text-soft); font-size: 13.5px; }
+
+  h1 { font-family: var(--serif); font-size: 23px; font-weight: 600; line-height: 1.75;
+    letter-spacing: .05em; text-align: center; margin: 36px 0 14px; }
+  h2 { font-family: var(--serif); font-size: 18.5px; font-weight: 600; line-height: 1.8;
+    letter-spacing: .05em; margin: 0 0 12px; }
+  p { margin: 0 0 15px; }
+  .soft { color: var(--text-soft); }
+  .center { text-align: center; }
+
+  section { margin-top: 40px; }
+  .card { background: var(--white); border: 1px solid var(--line);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 30px 26px; }
+  .card--quiet { background: var(--cream-2); border: none; box-shadow: none; }
+
+  .steps { list-style: none; margin: 4px 0 0; }
+  .steps li { display: flex; gap: 12px; align-items: baseline;
+    padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .steps li:last-child { border-bottom: none; }
+  .steps b { flex: none; width: 60px; font-family: var(--serif); font-size: 11.5px;
+    letter-spacing: .1em; color: var(--blue-deep); font-weight: 600; }
+  .steps span { flex: none; margin-left: auto; font-size: 12px; color: var(--text-soft); }
+
+  .list { list-style: none; }
+  .list li { position: relative; padding: 6px 0 6px 20px; font-size: 14.5px; }
+  .list li::before { content: ""; position: absolute; left: 2px; top: 16px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--blue); opacity: .55; }
+
+  /* 目次。ふだんは畳んでおいて、見たい方だけ開く。 */
+  .toc { margin-top: 18px; border-top: 1px solid var(--line); }
+  .toc > summary { list-style: none; cursor: pointer; padding: 13px 0 3px;
+    text-align: center; font-size: 13px; letter-spacing: .06em; color: var(--blue-deep); }
+  .toc > summary::-webkit-details-marker { display: none; }
+  .toc > summary::after { content: "　＋"; }
+  .toc[open] > summary::after { content: "　−"; }
+  .toc__group { margin-top: 16px; }
+  .toc__ttl { font-family: var(--serif); font-size: 12px; font-weight: 600;
+    letter-spacing: .1em; color: var(--blue-deep); margin-bottom: 3px; }
+  .toc__list { list-style: none; }
+  .toc__list li { position: relative; padding-left: 14px; font-size: 13.5px;
+    line-height: 1.85; color: var(--text-soft); }
+  .toc__list li::before { content: "・"; position: absolute; left: 0; }
+
+  .price { text-align: center; margin-top: 8px; }
+  .price__num { font-family: var(--serif); font-size: 40px; font-weight: 600;
+    letter-spacing: .04em; line-height: 1.2; }
+  .price__num small { font-size: 15px; font-weight: 400; margin-left: 4px; }
+  .price__note { font-size: 12.5px; line-height: 1.95; color: var(--text-soft); margin-top: 16px; text-align: left; }
+
+  .btn { display: block; width: 100%; padding: 19px 18px; margin-top: 24px;
+    background: var(--blue); color: var(--white); border: none; border-radius: 999px;
+    font-family: var(--sans); font-size: 16px; letter-spacing: .08em; cursor: pointer;
+    box-shadow: var(--shadow-sm); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .btn__sub { display: block; font-size: 11.5px; letter-spacing: .04em; opacity: .9; margin-top: 5px; }
+
+  .skip { display: block; text-align: center; margin-top: 26px; font-size: 13.5px;
+    color: var(--text-soft); text-decoration: none; border-bottom: 1px solid var(--line);
+    padding-bottom: 3px; width: fit-content; margin-left: auto; margin-right: auto; }
+
+  .msg { margin-top: 16px; font-size: 13.5px; line-height: 1.85; text-align: center; }
+  .msg.error { color: #B4553F; }
+
+  .done { text-align: center; padding: 56px 0; }
+  .done h1 { margin-top: 0; }
+
+  @media (max-width: 480px) {
+    body { font-size: 14.5px; }
+    h1 { font-size: 21px; }
+    .card { padding: 26px 20px; }
+    .btn { font-size: 15px; padding: 18px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Photelier&nbsp;Salon</div>
+  <div class="sub">PHOTELIER ACADEMY</div>
+</header>
+
+<div id="loading" class="state">読み込んでいます…</div>
+
+<!-- ===== 本編 ===== -->
+<main id="offer" style="display:none;">
+  <div class="wrap">
+
+    <h1 id="lead-title">ご入会、<br>ありがとうございます</h1>
+    <p class="center soft" id="lead-1">お手続きは完了しました。<br>お部屋の準備もできています。</p>
+    <p class="center" style="margin-top:22px;" id="lead-2">その前に、ひとつだけ<br>ご案内させてください。</p>
+
+    <section>
+      <div class="card">
+        <h2>サロンは、10ヶ月かけて開きます</h2>
+        <p>お渡しする動画は、全部で64本あります。ご入会の日から31日ごとに、ひとつずつ章が開いていきます。</p>
+        <p class="soft" style="margin-bottom:0;">一度に受け取ると、どこから手をつけていいか分からなくなってしまうからです。ゆっくり、順番に。それがいちばん身につく形だと思っています。</p>
+
+        <ul class="steps" style="margin-top:22px;">
+          <li><b>入会日</b>はじめに／スマホ・カメラの基礎／世界観設計<span>6本</span></li>
+          <li><b>1ヶ月目</b>スマホ・カメラの基礎（つづき）<span>6本</span></li>
+          <li><b>2-4ヶ月目</b>テーブルフォト／よくある失敗と直し方<span>18本</span></li>
+          <li><b>5-6ヶ月目</b>ライティング／写真編集<span>10本</span></li>
+          <li><b>7ヶ月目</b>マーケティングの全体像<span>8本</span></li>
+          <li><b>8-9ヶ月目</b>発信・集客／商品設計<span>16本</span></li>
+        </ul>
+
+        <details class="toc">
+          <summary>64本のタイトルを見る</summary>
+
+          <div class="toc__group">
+            <div class="toc__ttl">入会日（6本）</div>
+            <ul class="toc__list">
+              <li>はじめに</li>
+              <li>スマホとカメラの違い</li>
+              <li>スマホ撮影基礎</li>
+              <li>自分のサービスで幸せにしたいペルソナ設定</li>
+              <li>自分の好きを見える化するイメージマップ作成</li>
+              <li>大人女性に魅せる5大テイスト</li>
+            </ul>
+          </div>
+
+          <div class="toc__group">
+            <div class="toc__ttl">1ヶ月目（6本）</div>
+            <ul class="toc__list">
+              <li>カメラピントの合わせ方</li>
+              <li>カメラ撮影モード</li>
+              <li>ぼかした写真の撮り方</li>
+              <li>カメラマニュアル設定</li>
+              <li>カメラレンズの特性</li>
+              <li>一眼レフとミラーレス一眼の違い</li>
+            </ul>
+          </div>
+
+          <div class="toc__group">
+            <div class="toc__ttl">2ヶ月目（5本）</div>
+            <ul class="toc__list">
+              <li>女性を惹き寄せるテーブルフォトとは？</li>
+              <li>テーブルフォト撮影前に考えるべき3ステップ</li>
+              <li>テーブルフォト撮影の基本</li>
+              <li>アングル・構図・写真の切り取り方</li>
+              <li>添削動画1</li>
+            </ul>
+          </div>
+
+          <div class="toc__group">
+            <div class="toc__ttl">3ヶ月目（6本）</div>
+            <ul class="toc__list">
+              <li>テーブルフォト写真の切り取り方</li>
+              <li>女性を惹き寄せる配色の考え方</li>
+              <li>自然に視線を誘導するスタイリングのコツ</li>
+              <li>下地を使ったスタイリングの仕方</li>
+              <li>下地を使ったスタイリング実践</li>
+              <li>添削動画2</li>
+            </ul>
+          </div>
+
+          <div class="toc__group">
+            <div class="toc__ttl">4ヶ月目（7本）</div>
+            <ul class="toc__list">
+              <li>下地と壁を使ったスタイリングの仕方</li>
+              <li>下地と壁を使ったスタイリング実践</li>
+              <li>女性の心を掴むアイテム別撮影</li>
+              <li>テーブルコーディネートのスタイリング</li>
+              <li>インテリアを使ったスタイリング</li>
+              <li>添削動画3</li>
+              <li>添削動画4</li>
+            </ul>
+          </div>
+
+          <div class="toc__group">
+            <div class="toc__ttl">5ヶ月目（5本）</div>
+            <ul class="toc__list">
+              <li>ライティングとは</li>
+              <li>テーブルフォトライティング撮影の基本</li>
+              <li>ライティング撮影の機材について</li>
+              <li>アクセサリによる写りの違い</li>
+              <li>ライティング撮影実践</li>
+            </ul>
+          </div>
+
+          <div class="toc__group">
+            <div class="toc__ttl">6ヶ月目（5本）</div>
+            <ul class="toc__list">
+              <li>アクセサリーの取り付け方</li>
+              <li>実物以上にステキに魅せるレタッチ術</li>
+              <li>レタッチ実践</li>
+              <li>5大テイスト別レタッチ例</li>
+              <li>添削動画5</li>
+            </ul>
+          </div>
+
+          <div class="toc__group">
+            <div class="toc__ttl">7ヶ月目（8本）</div>
+            <ul class="toc__list">
+              <li>マーケティング全体像の把握</li>
+              <li>ブランディングとマーケティングの違い</li>
+              <li>売れる市場</li>
+              <li>ペルソナ設定</li>
+              <li>解決策</li>
+              <li>リサーチ・モデリング</li>
+              <li>コンセプト設計</li>
+              <li>集客につなげるテーブルフォト活用</li>
+            </ul>
+          </div>
+
+          <div class="toc__group">
+            <div class="toc__ttl">8ヶ月目（5本）</div>
+            <ul class="toc__list">
+              <li>発信の本質</li>
+              <li>フォロワーの増やし方</li>
+              <li>インスタフォロワーアップ戦略</li>
+              <li>インスタプロフィール</li>
+              <li>発信ネタ出し・7つの型</li>
+            </ul>
+          </div>
+
+          <div class="toc__group">
+            <div class="toc__ttl">9ヶ月目（11本）</div>
+            <ul class="toc__list">
+              <li>5つの発信テンプレート</li>
+              <li>ストーリーズ投稿</li>
+              <li>ハイライト</li>
+              <li>リール作成</li>
+              <li>リール撮影の仕方</li>
+              <li>FE（お試し商品）</li>
+              <li>FE LP作成</li>
+              <li>満席を作るLINE告知文</li>
+              <li>お申し込みを頂く流れ</li>
+              <li>クロージング</li>
+              <li>マインド</li>
+            </ul>
+          </div>
+
+        </details>
+      </div>
+    </section>
+
+    <section>
+      <div class="card">
+        <h2>今日、ぜんぶ開くこともできます</h2>
+        <p>「先に全体を見ておきたい」<br>「近いうちに募集を控えている」</p>
+        <p>そういう方のために、10ヶ月分を今日ぜんぶ開く方法をご用意しました。</p>
+        <p style="margin-bottom:0;"><strong>中身はまったく同じです。届く速さだけが変わります。</strong></p>
+      </div>
+    </section>
+
+    <section>
+      <div class="card card--quiet">
+        <h2>今は、必要のない方</h2>
+        <ul class="list">
+          <li>まずは1ヶ月、のぞいてみたい方</li>
+          <li>毎月ひとつずつのペースが心地よい方</li>
+          <li>写真を撮る時間が、今はまだ取りにくい方</li>
+        </ul>
+        <p class="soft" style="margin:14px 0 0;">ぜんぶ開いても、見る時間がなければ意味がありません。少しでも迷われたなら、開かないほうをおすすめします。このまま進んでも、いずれ全部お手元に届きます。</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="card">
+        <h2>お役に立てそうな方</h2>
+        <ul class="list">
+          <li>3ヶ月以内に、募集やレッスンの予定がある方</li>
+          <li>写真も発信も、今つくり直す必要のある方</li>
+          <li>順番よりも、全体像から入りたい方</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="card card--quiet">
+        <h2>変わらないこと</h2>
+        <ul class="list">
+          <li>月々のお支払い（9,900円）は、これまで通り続きます</li>
+          <li>月1回の質問会（毎月 第4金曜 21時／初回の9月と12月のみ第3金曜）と、毎月増えていくコンテンツもこれまで通りです</li>
+          <li>写真の添削と、個別の伴走は本講座のみです。サロンには含まれません</li>
+          <li>動画をご覧いただけるのは、サロンにご在籍のあいだです。退会されますと、開いた動画も見られなくなります</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="card">
+        <div class="price">
+          <p class="soft" style="margin-bottom:6px;" id="price-lead">10ヶ月分を、今日ぜんぶ開く</p>
+          <div class="price__num">49,800<small>円（税込）</small></div>
+          <p class="price__note">
+            ・ご入会のときに登録されたカードに、そのままお支払いいただけます。カード番号の入力は必要ありません。<br>
+            ・一括でのお支払いのみです。分けてお支払いになりたい方は、月々のペースで進んでいただくのが確実です。<br>
+            ・これは「毎月ひとつずつ開く順番を、今日に早める」お手続きです。動画そのものをお渡しするものではありません。<br>
+            ・そのため、ご覧いただけるのはサロンにご在籍のあいだです。退会後はご覧いただけなくなります。<br>
+            ・動画という性質上、ご購入後の返金はお受けしておりません。
+          </p>
+        </div>
+
+        <button class="btn" id="buy" onclick="buy()">
+          今日、ぜんぶ開く
+          <span class="btn__sub">49,800円（税込）／ 登録済みのカードへ</span>
+        </button>
+        <div id="msg" class="msg"></div>
+
+        <!-- replace にしておくと、ホームで「戻る」を押してもこのページに戻ってこない -->
+        <a class="skip" href="/" onclick="event.preventDefault(); location.replace('/');">このまま、ゆっくり進みます</a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- ===== 購入後 ===== -->
+<div id="done" class="done" style="display:none;">
+  <div class="wrap">
+    <h1>ぜんぶ、開きました</h1>
+    <p class="soft">64本すべてがお手元にあります。<br>どうぞ、好きなところから始めてください。</p>
+    <a class="btn" href="/" style="text-decoration:none; margin-top:28px;">サロンに入る</a>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('photelier_token');
+
+function show(id) {
+  ['loading', 'offer', 'done'].forEach(x => {
+    document.getElementById(x).style.display = (x === id) ? 'block' : 'none';
+  });
+}
+
+async function boot() {
+  if (!token) { location.href = '/'; return; }
+  try {
+    const res = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
+    if (!res.ok) { location.href = '/'; return; }
+    const { member } = await res.json();
+    // すでに全部開いている方（本講座生・購入済み）にはお見せしない
+    if (member.full_unlock || member.tier === 'course') { location.href = '/'; return; }
+    await adjustCopy(member);
+    show('offer');
+  } catch (e) {
+    location.href = '/';
+  }
+}
+
+// このページは入会直後だけでなく、何ヶ月かたってからも開かれる。
+// 「ご入会ありがとうございます」のままだと合わないので、開き具合に合わせて言い方を変える。
+async function adjustCopy(member) {
+  if (!member.unlocked_month) return;   // 入会したばかりの方は、そのまま
+  let remaining = 0;
+  try {
+    const lib = await (await fetch('/api/library', {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('photelier_token') },
+    })).json();
+    lib.categories.forEach(c => {
+      remaining += c.videos.filter(v => {
+        // 本講座の方だけのもの（course_only で m の指定がないもの）は含まれない
+        if (typeof v.m !== 'number' && c.course_only) return false;
+        const m = (typeof v.m === 'number') ? v.m : (c.month || 0);
+        return m > member.unlocked_month;
+      }).length;
+    });
+  } catch (e) {}
+  document.getElementById('lead-title').innerHTML = 'まだ開いていない章が<br>あります';
+  document.getElementById('lead-1').innerHTML =
+    `いまは${member.unlocked_month + 1}ヶ月目まで開いています。`
+    + (remaining ? `<br>のこりは${remaining}本です。` : '');
+  document.getElementById('lead-2').innerHTML = 'この先の分を、今日ぜんぶ<br>開くこともできます。';
+  document.getElementById('price-lead').textContent = 'のこりを、今日ぜんぶ開く';
+}
+
+async function buy() {
+  const btn = document.getElementById('buy');
+  const msg = document.getElementById('msg');
+  btn.disabled = true;
+  msg.className = 'msg';
+  msg.textContent = 'お支払いの手続きをしています…';
+  try {
+    const res = await fetch('/api/upsell-purchase', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      msg.className = 'msg error';
+      msg.textContent = data.detail || 'お支払いができませんでした。';
+      btn.disabled = false;
+      return;
+    }
+    show('done');
+    window.scrollTo(0, 0);
+  } catch (e) {
+    msg.className = 'msg error';
+    msg.textContent = '通信に失敗しました。もう一度お試しください。';
+    btn.disabled = false;
+  }
+}
+
+boot();
+</script>
+</body>
+</html>

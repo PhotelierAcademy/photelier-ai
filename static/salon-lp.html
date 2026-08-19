@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photelier サロン｜世界観フォト × SNS × ブランド設計</title>
+<meta name="description" content="お教室の先生・ハンドメイド作家さんのための、月額メンバーシップ「Photelier サロン」。写真の考え方から発信までを、自分のペースで学べます。">
+<link rel="stylesheet" href="/static/design-tokens.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--cream);
+    line-height: 1.95;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { display: block; max-width: 100%; }
+
+  /* ---------- 共通レイアウト ---------- */
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 22px; }
+  section { padding: clamp(48px, 9vw, 84px) 0; }
+  .sec--tint { background: var(--cream-2); }
+  .sec--blue { background: var(--hero-bg); }
+  .sec--white { background: var(--white); }
+
+  .eyebrow {
+    font-size: 11px; letter-spacing: .3em; text-transform: uppercase;
+    color: var(--blue-deep); text-align: center; margin-bottom: 10px;
+  }
+  h2 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(20px, 3.6vw, 27px); letter-spacing: .07em;
+    line-height: 1.65; text-align: center; margin-bottom: 8px;
+  }
+  .lead {
+    text-align: center; color: var(--text-soft); font-size: 13.5px;
+    line-height: 2; margin-bottom: 34px;
+  }
+  .divider {
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; color: var(--gold); font-size: 12px; margin: 30px 0;
+  }
+  .divider::before, .divider::after {
+    content: ""; height: 1px; width: min(110px, 22vw); background: var(--line);
+  }
+
+  /* ---------- ヘッダー ---------- */
+  header.site {
+    background: var(--white); border-bottom: 1px solid var(--line);
+    padding: 16px 22px; text-align: center; position: sticky; top: 0; z-index: 30;
+  }
+  header.site .logo { font-family: var(--script); font-size: 25px; color: var(--blue-deep); line-height: 1.1; }
+  header.site .sub { font-size: 10px; letter-spacing: .32em; color: var(--text-soft); text-transform: uppercase; }
+
+  /* ---------- ヒーロー ---------- */
+  .hero { background: var(--hero-bg); border-bottom: 1px solid var(--line); padding: 0; }
+  .hero__photo { width: 100%; aspect-ratio: 3/2; object-fit: cover; }
+  .hero__body { padding: clamp(30px, 6vw, 52px) 22px clamp(34px, 6vw, 54px); text-align: center; }
+  .hero__tag {
+    display: inline-block; border: 1px solid var(--blue);
+    color: var(--blue-deep); border-radius: 999px;
+    padding: 5px 16px; font-size: 11.5px; letter-spacing: .16em; margin-bottom: 18px;
+  }
+  .hero__title {
+    font-family: var(--serif); font-weight: 700;
+    font-size: clamp(23px, 5.4vw, 38px); letter-spacing: .09em; line-height: 1.55;
+  }
+  .hero__title em { font-style: normal; color: var(--blue-deep); }
+  .hero__sub { font-family: var(--serif); font-size: clamp(14px, 2.6vw, 17px); letter-spacing: .14em; color: var(--text-soft); margin-top: 16px; }
+  .hero__name { font-family: var(--script); font-size: clamp(34px, 8vw, 52px); color: var(--blue-deep); margin-top: 6px; line-height: 1.1; }
+  .hero__note { font-size: 12.5px; color: var(--text-soft); margin-top: 18px; line-height: 2; }
+
+  /* ---------- CTA ---------- */
+  .cta { text-align: center; margin: 34px 0 0; }
+  .cta__btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; max-width: 460px; padding: 18px 22px;
+    background: var(--blue); color: #fff; text-decoration: none;
+    border-radius: 999px; font-size: 16px; font-weight: 600; letter-spacing: .05em;
+    box-shadow: var(--shadow); transition: background .2s, transform .2s;
+  }
+  .cta__btn:hover { background: var(--blue-deep); transform: translateY(-1px); }
+  .cta__price { font-size: 12.5px; color: var(--text-soft); margin-top: 12px; line-height: 1.9; }
+  .cta--onblue .cta__btn { box-shadow: 0 8px 30px rgba(61,85,100,.14); }
+
+  /* ---------- 語り（本文ブロック） ---------- */
+  .talk { font-size: 15px; line-height: 2.15; }
+  .talk p { margin-bottom: 22px; }
+  .talk strong { font-weight: 600; color: var(--blue-deep); }
+
+  /* ---------- お悩みカード ---------- */
+  .worries { display: grid; gap: 14px; }
+  .worry {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px 22px; display: flex; gap: 14px; align-items: flex-start;
+  }
+  .worry__mark { color: var(--gold); font-size: 14px; line-height: 2.1; flex-shrink: 0; }
+  .worry p { font-size: 14px; line-height: 1.95; }
+
+  /* ---------- 動画 ---------- */
+  .movie {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg);
+    padding: 14px; box-shadow: var(--shadow); overflow: hidden;
+  }
+  .movie video {
+    display: block; width: 100%; aspect-ratio: 16/9;
+    border-radius: 10px; background: #2A3B47;
+  }
+  .movie__note {
+    font-size: 12px; color: var(--text-soft); letter-spacing: .04em;
+    text-align: center; margin-top: 12px;
+  }
+
+  /* ---------- 3つの柱 ---------- */
+  .pillars { display: grid; gap: 18px; }
+  .pillar {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg);
+    padding: 26px 24px; box-shadow: var(--shadow-sm);
+  }
+  .pillar__num { font-family: var(--serif); font-size: 13px; letter-spacing: .22em; color: var(--gold); margin-bottom: 8px; }
+  .pillar h3 { font-family: var(--serif); font-size: 17.5px; font-weight: 600; letter-spacing: .05em; margin-bottom: 10px; line-height: 1.6; }
+  .pillar p { font-size: 13.5px; color: var(--text-soft); line-height: 2.05; }
+
+  /* ---------- カリキュラム ---------- */
+  .curriculum { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 8px 26px; box-shadow: var(--shadow-sm); }
+  .curriculum li { list-style: none; padding: 17px 0; border-bottom: 1px dashed var(--line); display: flex; gap: 14px; align-items: baseline; }
+  .curriculum li:last-child { border-bottom: none; }
+  .curriculum .no { font-family: var(--serif); font-size: 12px; color: var(--gold); letter-spacing: .1em; flex-shrink: 0; width: 26px; }
+  .curriculum .ttl { font-size: 14.5px; line-height: 1.8; }
+  .curriculum .ttl span { display: block; font-size: 12.5px; color: var(--text-soft); margin-top: 3px; }
+
+  /* ---------- ギャラリー ---------- */
+  .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .gallery img { aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; }
+
+  /* ---------- 受講生の変化 ---------- */
+  .voices { display: grid; gap: 16px; }
+  .voice {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px 24px 20px; box-shadow: var(--shadow-sm);
+  }
+  .voice__before { font-size: 13px; color: var(--text-soft); line-height: 1.9; }
+  .voice__arrow { color: var(--gold); font-size: 13px; margin: 10px 0 6px; letter-spacing: .2em; }
+  .voice__after { font-family: var(--serif); font-size: 17px; font-weight: 600; letter-spacing: .04em; line-height: 1.7; color: var(--blue-deep); }
+  .voice__who { font-size: 12px; color: var(--text-soft); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); letter-spacing: .04em; }
+
+  /* ---------- 特典 ---------- */
+  .bonus {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg);
+    padding: 26px 24px; box-shadow: var(--shadow-sm); margin-bottom: 16px;
+  }
+  .bonus__head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .bonus__no { font-family: var(--serif); font-size: 12px; letter-spacing: .2em; color: var(--gold); }
+  .bonus__value { font-size: 11.5px; color: var(--text-soft); border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; }
+  .bonus h3 { font-family: var(--serif); font-size: 18px; font-weight: 600; letter-spacing: .05em; line-height: 1.6; width: 100%; }
+  .bonus p { font-size: 13.5px; color: var(--text-soft); line-height: 2.05; }
+  .bonus ul { margin: 12px 0 0; padding-left: 0; list-style: none; }
+  .bonus ul li { font-size: 13.5px; line-height: 1.95; padding-left: 18px; position: relative; }
+  .bonus ul li::before { content: "✦"; position: absolute; left: 0; color: var(--gold); font-size: 10px; }
+  .bonus__note { font-size: 12px !important; color: var(--text-soft); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); line-height: 1.8 !important; }
+
+  /* ---------- 向き / 不向き ---------- */
+  .fit { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 26px 24px; }
+  .fit + .fit { margin-top: 16px; }
+  .fit h3 { font-family: var(--serif); font-size: 16.5px; font-weight: 600; letter-spacing: .05em; margin-bottom: 14px; }
+  .fit ul { list-style: none; }
+  .fit li { font-size: 13.5px; line-height: 1.95; padding: 7px 0 7px 20px; position: relative; }
+  .fit li::before { position: absolute; left: 0; font-size: 11px; top: 8px; }
+  .fit--yes li::before { content: "✦"; color: var(--gold); }
+  .fit--no li::before { content: "―"; color: var(--text-soft); }
+  .fit--no li { color: var(--text-soft); }
+
+  /* ---------- 料金 ---------- */
+  .price {
+    background: var(--white); border: 1px solid var(--blue);
+    border-radius: var(--radius-lg); padding: 30px 26px; box-shadow: var(--shadow); text-align: center;
+  }
+  .price__label { font-family: var(--serif); font-size: 15px; letter-spacing: .08em; margin-bottom: 18px; }
+  .price__row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 0; border-bottom: 1px dashed var(--line); text-align: left; }
+  .price__row:last-of-type { border-bottom: none; }
+  .price__k { font-size: 13.5px; }
+  .price__v { font-family: var(--serif); font-size: 19px; font-weight: 600; letter-spacing: .03em; white-space: nowrap; }
+  .price__v small { font-size: 12px; font-family: var(--sans); font-weight: 400; }
+  .price__was { color: var(--text-soft); font-size: 12.5px; text-decoration: line-through; margin-right: 6px; font-family: var(--sans); font-weight: 400; }
+  .price__note { font-size: 12px; color: var(--text-soft); line-height: 2; margin-top: 18px; text-align: left; }
+
+  /* ---------- サポート範囲 ---------- */
+  .scope { background: var(--hero-bg); border-radius: var(--radius); padding: 22px 24px; font-size: 13px; line-height: 2.05; color: var(--text); }
+  .scope b { font-weight: 600; }
+  .linkline { display: inline-block; margin-top: 12px; color: var(--blue-deep); font-size: 13px; letter-spacing: .04em; border-bottom: 1px solid var(--blue-deep); padding-bottom: 2px; text-decoration: none; }
+
+  /* ---------- FAQ ---------- */
+  .faq { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .faq details { border-bottom: 1px solid var(--line); }
+  .faq details:last-child { border-bottom: none; }
+  .faq summary { padding: 18px 22px; font-size: 14px; cursor: pointer; list-style: none; display: flex; gap: 12px; align-items: flex-start; line-height: 1.8; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::before { content: "Q"; font-family: var(--serif); color: var(--gold); font-size: 13px; flex-shrink: 0; }
+  .faq p { padding: 0 22px 20px 52px; font-size: 13.5px; color: var(--text-soft); line-height: 2.05; }
+
+  /* ---------- フッター ---------- */
+  footer { background: var(--white); border-top: 1px solid var(--line); padding: 34px 22px 100px; text-align: center; }
+  footer .logo { font-family: var(--script); font-size: 22px; color: var(--blue-deep); }
+  footer .fine { font-size: 11.5px; color: var(--text-soft); line-height: 2; margin-top: 14px; text-align: left; max-width: 700px; margin-left: auto; margin-right: auto; }
+  footer .copy { font-size: 11px; color: var(--text-soft); letter-spacing: .1em; margin-top: 20px; }
+
+  /* ---------- 固定CTA ---------- */
+  .fixed-cta {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: rgba(251,248,243,.95); border-top: 1px solid var(--line);
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(6px);
+  }
+  .fixed-cta a {
+    display: block; max-width: 460px; margin: 0 auto; text-align: center;
+    background: var(--blue); color: #fff; text-decoration: none;
+    padding: 14px; border-radius: 999px; font-size: 14.5px; font-weight: 600; letter-spacing: .04em;
+  }
+  .fixed-cta a:hover { background: var(--blue-deep); }
+  .fixed-cta small { display: block; font-size: 10.5px; font-weight: 400; letter-spacing: 0; opacity: .92; margin-top: 2px; }
+
+  @media (max-width: 480px) {
+    body { font-size: 14.5px; }
+    .talk { font-size: 14.5px; }
+    .gallery { gap: 6px; }
+    /* ボタンの文字が2行に折れないように、スマホでは少し小さく */
+    .cta__btn { font-size: 15px; padding: 17px 18px; gap: 8px; }
+    .price { padding: 28px 18px; }
+    /* スライドの文字が読めるよう、スマホでは動画を画面いっぱいに */
+    .movie {
+      margin-left: -22px; margin-right: -22px;
+      padding: 0; border-left: none; border-right: none; border-radius: 0;
+    }
+    .movie video { border-radius: 0; }
+    .movie__note { margin: 10px 0 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="logo">Photelier&nbsp;Salon</div>
+  <div class="sub">Photelier Academy</div>
+</header>
+
+<!-- ===== ヒーロー ===== -->
+<div class="hero">
+  <img class="hero__photo" src="/static/mock-assets/hero.jpg?v=2" alt="世界観フォトの撮影風景">
+  <div class="hero__body">
+    <div class="hero__tag">お教室の先生・ハンドメイド作家さんへ</div>
+    <h1 class="hero__title">
+      写真が変わると、<br><em>選ばれ方</em>が変わります。
+    </h1>
+    <div class="hero__sub">世界観フォト × SNS × ブランド設計</div>
+    <div class="hero__name">Photelier Salon</div>
+    <p class="hero__note">
+      月額メンバーシップ・オンラインプログラム<br>
+      動画で学ぶ ＋ みんなの部屋 ＋ 月1回の質問会 ＋ さちえ先生AI
+    </p>
+    <div class="cta">
+      <a class="cta__btn" href="/subscribe">はじめてみる<span>→</span></a>
+      <p class="cta__price">初月 924円（税込）／ 2ヶ月目以降 9,900円（税込）<br>入会金 50,000円は、このページからのお申し込みは0円です</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== さちえの語り ===== -->
+<section class="sec--white">
+  <div class="wrap">
+    <div class="eyebrow">Introduction</div>
+    <h2>「センスがないから」と<br>あきらめていませんか？</h2>
+    <div class="divider">✦</div>
+
+    <div class="talk">
+      <p>0.2秒で心をつかむ世界観フォト講師の、おがたさちえです＾＾</p>
+
+      <p>
+        わたしは6年間、インスタを頑張っても4,000フォロワーのままでした。<br>
+        撮影には毎回3時間以上かかっていて、それでも「なんだか伝わらない」写真ばかり。
+      </p>
+
+      <p>
+        変わったきっかけは、テクニックではありませんでした。<br>
+        <strong>「自分が伝えたいイメージで撮る」</strong>という考え方に変えただけなんです。
+      </p>
+
+      <p>
+        そこから半年で2.9万フォロワーになり、撮影時間は15分に。<br>
+        無理に宣伝しなくても「先生の写真の世界観が大好きです」「ぜひ習ってみたいです」と、
+        お客様のほうから言っていただけるようになりました。
+      </p>
+
+      <p>
+        でも、これはわたしが特別だったからではありません。<br>
+        同じ考え方を実践された受講生さんが、次々に変わっていかれたからです。
+      </p>
+
+      <p><strong>世界観は、センスではなく作り込みです。</strong></p>
+
+      <p>
+        ただ、正直にお伝えしますね。<br>
+        写真は、撮り方を知っただけでは上達しないんです。<br>
+        そして、お写真がきれいになっても、発信していかないと
+        あなたのお教室や作品を知っていただくことはできません。
+      </p>
+
+      <p>
+        でも、おひとりで頑張ろうとすると、たいていここで止まってしまうんですよね。
+      </p>
+    </div>
+
+    <div class="worries">
+      <div class="worry"><span class="worry__mark">✦</span><p>これでいいのかわからなくて、1枚に何時間もかかってしまう。だんだん撮ることが嫌になる。</p></div>
+      <div class="worry"><span class="worry__mark">✦</span><p>発信しようと思っても、何を書いたらいいのか分からない。</p></div>
+      <div class="worry"><span class="worry__mark">✦</span><p>投稿しても反応がないと、「私には向いていないのかも」と落ち込んでしまう。</p></div>
+    </div>
+
+    <div class="talk" style="margin-top:26px;">
+      <p>
+        個別相談でも、本当によく伺うお話です。<br>
+        <strong>写真が納得いかない → 載せない → 反応がない → やる気が出ない → また載せない。</strong><br>
+        作られているものはあんなに素敵なのに、この輪の中で止まってしまっている方が、たくさんいらっしゃいます。
+      </p>
+
+      <p>
+        続けられるかどうかは、意志の強さではないです。<br>
+        <strong>環境と、習慣です。</strong>
+      </p>
+
+      <p>
+        見てくれる人がいる。聞ける人がいる。今月やることが決まっている。<br>
+        それだけで、人は続けられるんですよね。
+      </p>
+
+      <p>
+        だから「作り込みの考え方」を学びながら、
+        お教室の先生やハンドメイド作家さんと<strong>一緒に頑張っていける場所</strong>として、
+        Photelier サロンをつくりました📷
+      </p>
+
+      <p>
+        ひとつだけ、大事にしていることがあります。<br>
+        <strong>ここは、ライバルが集まる場所ではありません。</strong>
+      </p>
+
+      <p>
+        同じお仕事の方がいらしても、比べる必要はないんですよ。
+        お一人おひとり、大切にしている世界観が違うからです。<br>
+        <strong>応援し合って、みんなで成長していく。</strong>
+        そういう安心できる場所にしたいと思っています。
+      </p>
+
+      <p>
+        写真を一緒に楽しめる仲間に出会える場所になったら、いちばん嬉しいです。<br>
+        本講座でも、卒業生のコミュニティでも、わたしがいつもお伝えしていることです＾＾
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== お悩み ===== -->
+<section class="sec--tint">
+  <div class="wrap">
+    <div class="eyebrow">Worries</div>
+    <h2>こんなお声を、よく伺います</h2>
+    <p class="lead">ひとつでも当てはまったら、きっとお役に立てます。</p>
+
+    <div class="worries">
+      <div class="worry"><span class="worry__mark">✦</span><p>作品は自信があるのに、写真になると魅力が伝わらない気がする。</p></div>
+      <div class="worry"><span class="worry__mark">✦</span><p>加工でごまかしてしまう。撮り直しても、結局いつも同じ写真になる…</p></div>
+      <div class="worry"><span class="worry__mark">✦</span><p>夜しか時間が取れなくて、暗くなってからの撮影をあきらめている。</p></div>
+      <div class="worry"><span class="worry__mark">✦</span><p>投稿は続けているのに反応がなくて、発信することが少し怖くなってきた。</p></div>
+      <div class="worry"><span class="worry__mark">✦</span><p>体験レッスンには来ていただけるのに、その先の講座につながらない。</p></div>
+      <div class="worry"><span class="worry__mark">✦</span><p>本講座も気になるけれど、いきなりは勇気がいる。まず自分のペースで学びたい。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 動画 ===== -->
+<section class="sec--white">
+  <div class="wrap">
+    <div class="eyebrow">Movie</div>
+    <h2>2分だけ、<br>お話しさせてください</h2>
+    <p class="lead">なぜ、頑張っているのに選ばれないのか。<br>その理由を、いちばん短くお伝えしています。</p>
+
+    <div class="movie">
+      <video controls playsinline preload="none"
+             poster="/static/videos/salon-intro-poster.jpg">
+        <source src="/static/videos/salon-intro.mp4" type="video/mp4">
+      </video>
+      <p class="movie__note">約2分／音が出ます</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== サロンとは ===== -->
+<section class="sec--white">
+  <div class="wrap">
+    <div class="eyebrow">About</div>
+    <h2>Photelier サロンは、<br>「4つ」で進んでいきます</h2>
+    <p class="lead">
+      写真は、ひとりだと止まってしまうんです。<br>
+      だからここを、<b>続けられる場所</b>にしました。
+    </p>
+
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar__num">Ⅰ</div>
+        <h3>動画で学ぶ</h3>
+        <p>
+          本講座でお伝えしている「世界観フォト × 発信」のエッセンスを、
+          サロン向けに編集した動画で学べます。
+          スマホでもカメラでも、今のあなたの機材のまま始められますよ＾＾
+        </p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__num">Ⅱ</div>
+        <h3>みんなの部屋</h3>
+        <p>
+          会員さんだけが入れる、LINEのお部屋をご用意しています。<br>
+          月に1回、わたしから<b>お題</b>を出しますので、お写真を1枚、ひとことそえて置いてみてください。
+          前に撮ったお写真でも大丈夫ですよ＾＾<br>
+          そして毎週、みなさんのお写真の中から<b>3枚だけ</b>選んで、どこが素敵だったのかを解説しています。<br>
+          ふだんは、わたしが撮っているものや日々の気づきなども、お伝えしていきます。<br><br>
+          このお部屋には、3つだけお約束があります。
+          <b>否定しない。良かったところから言う。上手い下手を比べる場ではない。</b><br>
+          見ているだけの月があっても大丈夫です。ここは、続けるための場所なので＾＾
+        </p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__num">Ⅲ</div>
+        <h3>月1回の質問会</h3>
+        <p>
+          学んでいると必ず「これで合っているのかな」という瞬間が来ます。
+          <b>毎月 第4金曜の21時から</b>、わたしに直接聞ける場をご用意しています。
+          お子さんが寝たあとの時間に合わせました。聞くだけの参加でも大丈夫です。
+        </p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__num">Ⅳ</div>
+        <h3>さちえ先生AI（24時間）</h3>
+        <p>
+          質問会まで待てない小さな迷いは、わたしの考え方を覚えたAIにいつでも相談できます。
+          下地の選び方、光の向き、色合わせ。
+          「聞く場所がない」をなくすために用意しました。
+        </p>
+      </div>
+    </div>
+
+    <div class="divider">✦</div>
+
+    <div class="scope">
+      <b>そして、入られたその日にやっていただくことがあります。</b><br>
+      会員サイトを開くと、いちばん最初に<b>2つの診断</b>が出てきます。<br><br>
+      <b>① 世界観テイスト診断</b><br>
+      お仕事の内容とペルソナ、それから「好き」を集めたイメージマップを出していただくと、
+      <b>あなたの世界観がどんなテイストなのか</b>が言葉になって返ってきます。
+      おすすめの下地もお伝えします。わたしがふだん受講生さんを見ている考え方を、そのまま入れたしくみです。<br><br>
+      <b>② 集客の現在地チェック</b><br>
+      お客様が集まるまでの道のりの、<b>どこで止まっているのか</b>がわかります。<br><br>
+      写真って、撮り方より先に「どこへ向かうのか」が決まっていないと、途中で迷子になってしまうんですよね。
+      だから、いちばん最初にここをやっていただきます。
+      <b>撮る前に、自分の「好き」が言葉になります＾＾</b>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 学べる内容 ===== -->
+<section class="sec--tint">
+  <div class="wrap">
+    <div class="eyebrow">Curriculum</div>
+    <h2>学べる内容</h2>
+    <p class="lead">撮ることから、伝えることまで。順番に進めていきます。</p>
+
+    <ul class="curriculum">
+      <li><span class="no">01</span><span class="ttl">世界観フォト設計<span>ペルソナ・イメージマップで「わたしのテイスト」を決める</span></span></li>
+      <li><span class="no">02</span><span class="ttl">スマホ・カメラの撮影基礎<span>難しい用語は使いません。今ある機材のままで大丈夫です</span></span></li>
+      <li><span class="no">03</span><span class="ttl">0.2秒で心をつかむテーブルフォトの撮り方<span>構図・余白・スタイリングの"理由"を言葉にできるように</span></span></li>
+      <li><span class="no">04</span><span class="ttl">夜でも昼間みたいに撮れるLEDライティング<span>時間帯にしばられずに撮れるようになります</span></span></li>
+      <li><span class="no">05</span><span class="ttl">作品の魅力を120%伝える写真編集術<span>ごまかす加工ではなく、伝えるための編集</span></span></li>
+      <li><span class="no">06</span><span class="ttl">売り込まないで売れるを叶えるマーケティング全体像<span>写真とお申し込みが、どうつながるのかの地図</span></span></li>
+      <li><span class="no">07</span><span class="ttl">インスタの育て方<span>アルゴリズムに振り回されない、本質的な発信の考え方</span></span></li>
+      <li><span class="no">08</span><span class="ttl">集客につなげるテーブルフォト活用<span>撮った写真を、教室やお店の動線にのせる</span></span></li>
+    </ul>
+
+    <div class="divider">✦</div>
+
+    <div class="gallery">
+      <img src="/static/mock-assets/t1.jpg" alt="作品例">
+      <img src="/static/mock-assets/g-photonext.jpg" alt="作品例">
+      <img src="/static/mock-assets/t2.jpg" alt="作品例">
+      <img src="/static/mock-assets/t4.jpg" alt="作品例">
+      <img src="/static/mock-assets/t5.jpg" alt="作品例">
+      <img src="/static/mock-assets/g-cookiebox.jpg" alt="作品例">
+    </div>
+  </div>
+</section>
+
+<!-- ===== リアルイベント ===== -->
+<section class="sec--white">
+  <div class="wrap">
+    <div class="eyebrow">Real</div>
+    <h2>年に何度か、<br>実際にお会いしています</h2>
+    <p class="lead">
+      画面の向こうにいた方と、同じ場所で撮る日があります。<br>
+      参加は自由です。行きたい会だけで大丈夫ですよ＾＾
+    </p>
+
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar__num">Lunch</div>
+        <h3>ランチ会</h3>
+        <p>
+          みんなで集まって、お話しする会です。<br>
+          ひとりで続けていると、うまくいかない日に相談する相手がいないんですよね。そういう日のための場所です。<br>
+          せっかくなので、<b>撮りたくなる場所</b>を選びます。みんなで集合写真も撮りますし、
+          その場で撮影を楽しんでいただいても大丈夫ですよ＾＾
+        </p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__num">Photo</div>
+        <h3>撮影会（春・秋）</h3>
+        <p>
+          わたしが世界観を作り込んだ空間をご用意して、そこでみなさんに撮っていただきます。<br>
+          その日撮ったお写真は、そのままお仕事に使っていただけます。
+          光の当て方も、その場でお見せしますね＾＾
+        </p>
+      </div>
+      <div class="pillar">
+        <div class="pillar__num">Camp</div>
+        <h3>写真合宿（年1回）</h3>
+        <p>
+          2026年6月は、長崎・ハウステンボスへ行ってきました。<br>
+          参加された方が「<b>大人の修学旅行でした</b>」と言ってくださって、
+          わたしもその言葉がいちばん近いなと思っています。
+        </p>
+      </div>
+    </div>
+
+    <div class="divider">✦</div>
+
+    <div class="scope">
+      <b>長崎合宿のレポートを公開しています。</b><br>
+      どんな2日間だったのか、お写真とみなさんの感想をそのまま載せました。
+      「初対面の方ばかりで不安でしたが」というお声から始まるので、
+      はじめての方こそ読んでいただけたら嬉しいです＾＾<br>
+      <a class="linkline" href="https://nagasaki-camp.vercel.app/report.html" target="_blank" rel="noopener">長崎写真合宿2026 のレポートを見る →</a>
+    </div>
+
+    <div class="divider">✦</div>
+
+    <div class="talk">
+      <p>
+        そして、ひとつ<strong>目標</strong>があります。
+      </p>
+      <p>
+        いつか、みんなで<strong>パリ</strong>へ行きたいと思っています。<br>
+        観光ではなく、<strong>小道具の買い付け旅行</strong>です。
+      </p>
+      <p>
+        撮りたい世界観があっても、そのための小物がなかなか見つからない。
+        そんなお声を、本当によく伺います。<br>
+        だったら、買い付けに行ってしまおう、と思ったんです。
+        買ってきた器や布で、帰ってからずっと撮れますから＾＾
+      </p>
+      <p>
+        長崎も、最初は「行きたいな」と思っただけでした。<br>
+        <strong>口に出したから、実現したんです。</strong>
+      </p>
+      <p>
+        わたし、<strong>母として・妻としてだけではなく、「私」としての人生を楽しんでいい</strong>と思っているんですよ。<br>
+        やりたいと思ったことを、いつも後回しにしなくていいんです。
+      </p>
+      <p>
+        写真も、発信も、そのための道具だと思っています。<br>
+        ご自分の感性を大切にしながら、自分らしく、そして経済的にも自立していける。<br>
+        そういう方には自然と人が惹かれて、「<b>あなたみたいに生きたい</b>」と言われる存在になっていきます。
+      </p>
+      <p>
+        そんな女性が増えたらいいなと思って、この場所を作りました。<br>
+        一緒に進んでいけたら嬉しいです𓂃𓈒𓏸
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA中間 ===== -->
+<section class="sec--blue">
+  <div class="wrap">
+    <h2>まずは、1ヶ月だけ<br>のぞいてみてください</h2>
+    <p class="lead">初月は924円（税込）。合わないと感じたら、いつでも退会できます。</p>
+    <div class="cta cta--onblue">
+      <a class="cta__btn" href="/subscribe">Photelier サロンに参加する<span>→</span></a>
+      <p class="cta__price">2ヶ月目以降 9,900円（税込）／ 入会金 0円</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 受講生の変化 ===== -->
+<section class="sec--white">
+  <div class="wrap">
+    <div class="eyebrow">Students</div>
+    <h2>受講生さんの変化</h2>
+    <p class="lead">「わたしにもできるかな」の答えは、みなさんが見せてくださいました。</p>
+
+    <div class="voices">
+      <div class="voice">
+        <p class="voice__before">体験レッスンに来ていただけても、継続レッスンにつながらない日々でした。</p>
+        <div class="voice__arrow">─── そこから ───</div>
+        <p class="voice__after">3ヶ月で、売上150万円に。</p>
+        <p class="voice__who">お花絞り教室 Y先生</p>
+      </div>
+      <div class="voice">
+        <p class="voice__before">インスタを頑張って投稿しても、ずっと反応がありませんでした。</p>
+        <div class="voice__arrow">─── そこから ───</div>
+        <p class="voice__after">リールが12万回再生。<br>6日間の販売会で70万円に。</p>
+        <p class="voice__who">木工作家 Mさん</p>
+      </div>
+      <div class="voice">
+        <p class="voice__before">写真がマンネリで、作品の魅力が伝わっていない気がしていました。</p>
+        <div class="voice__arrow">─── そこから ───</div>
+        <p class="voice__after">「写真が素敵」と言われるようになり、<br>新しい講座が即日満席に。</p>
+        <p class="voice__who">ハンドメイド講師 Yさん</p>
+      </div>
+    </div>
+
+    <div class="divider">✦</div>
+    <p class="lead" style="margin-bottom:0;">
+      写真が変わると、生徒さんの反応が変わります。<br>
+      そして、発信することが少しずつ楽しくなっていきます＾＾
+    </p>
+  </div>
+</section>
+
+<!-- ===== 特典 ===== -->
+<section class="sec--tint">
+  <div class="wrap">
+    <div class="eyebrow">Bonus</div>
+    <h2>このページからのご参加に<br>お付けしているもの</h2>
+
+    <div class="bonus">
+      <div class="bonus__head">
+        <span class="bonus__no">特典 Ⅰ</span>
+        <span class="bonus__value">50,000円 → 0円</span>
+        <h3>入会金が無料になります</h3>
+      </div>
+      <p>
+        通常は入会金50,000円をいただいているメンバーシップですが、
+        このページからのお申し込みに限り、入会金はいただきません。
+        さらに初月は924円（税込）でお試しいただけます。
+      </p>
+    </div>
+
+    <div class="bonus">
+      <div class="bonus__head">
+        <span class="bonus__no">特典 Ⅱ</span>
+        <span class="bonus__value">月々3,300円のお値引き</span>
+        <h3>月会費が、ずっと9,900円</h3>
+      </div>
+      <p>
+        通常は月額13,200円ですが、このページからご参加の方は
+        2ヶ月目以降もずっと9,900円（税込）で続けていただけます。
+        今後メンバーさんの人数に応じて価格を見直す予定ですが、
+        その場合もお値段は変わりません。
+      </p>
+    </div>
+
+    <div class="bonus">
+      <div class="bonus__head">
+        <span class="bonus__no">特典 Ⅲ</span>
+        <h3>Photelier 発信プランナー</h3>
+      </div>
+      <p>
+        「今月、何を投稿しよう」を、なくします。
+        ご自身のサービスとお客さまを入れていただくだけで、
+        30日分の発信プランができあがります。
+        1行目のフックから、最後のひと言まで入っています。
+        毎月くり返しお使いいただけますよ＾＾📷
+      </p>
+      <p class="bonus__note">※ 無料のChatGPTアカウントでお使いいただけます</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 向いている方 / そうでない方 ===== -->
+<section class="sec--white">
+  <div class="wrap">
+    <div class="eyebrow">For you</div>
+    <h2>こんな方に、届いてほしいです</h2>
+
+    <div class="fit fit--yes">
+      <h3>おすすめしたい方</h3>
+      <ul>
+        <li>料理・お菓子・ハンドメイドなど、作品の魅力をもっと素敵に伝えたい方</li>
+        <li>「わたしにはセンスがない」と思ってきた方</li>
+        <li>投稿が止まってしまって、発信に自信をなくしている方</li>
+        <li>教室やサロンの売上を、少しずつ安定させたい方</li>
+        <li>本講座も気になるけれど、まずは自分のペースで学びたい方</li>
+        <li>「好き」を、趣味ではなくお仕事にしていきたい方</li>
+      </ul>
+    </div>
+
+    <div class="fit fit--no">
+      <h3>今は、タイミングではないかもしれません</h3>
+      <ul>
+        <li>学ぶことよりも、結果だけを求めてしまう方</li>
+        <li>手を動かす前に、できない理由を探してしまう方</li>
+        <li>ほかの方と自分を比べて、落ち込んでしまう方</li>
+        <li>ご一緒するメンバーさんを、思いやれない方</li>
+        <li>体調やご環境の面で、今は学びを続けることが難しい方</li>
+      </ul>
+      <p style="font-size:13px;color:var(--text-soft);line-height:2;margin-top:14px;">
+        Photelier サロンは「できる・できない」よりも、
+        自分の感性を信じて進むことを大切にしている場所です。
+        だからこそ、正直にお伝えしておきますね。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 料金 ===== -->
+<section class="sec--tint">
+  <div class="wrap">
+    <div class="eyebrow">Price</div>
+    <h2>お月謝について</h2>
+    <p class="lead">わかりやすく、ここに全部書いておきます。</p>
+
+    <div class="price">
+      <div class="price__label">Photelier サロン<br>月額メンバーシップ</div>
+
+      <div class="price__row">
+        <span class="price__k">入会金</span>
+        <span class="price__v"><span class="price__was">50,000円</span>0<small>円</small></span>
+      </div>
+      <div class="price__row">
+        <span class="price__k">初月</span>
+        <span class="price__v">924<small>円（税込）</small></span>
+      </div>
+      <div class="price__row">
+        <span class="price__k">2ヶ月目以降</span>
+        <span class="price__v"><span class="price__was">13,200円</span>9,900<small>円（税込）</small></span>
+      </div>
+
+      <div class="cta">
+        <a class="cta__btn" href="/subscribe">サロンに参加する<span>→</span></a>
+      </div>
+
+      <p class="price__note">
+        ・お申し込みの翌月同日から、月額9,900円（税込）の自動決済となります。<br>
+        ・退会はいつでも可能です。会員サイトの「お支払いとお手続き」からご自身でしていただけます。退会後は会員サイトと特典はご覧いただけなくなります。<br>
+        ・月額課金のサービスのため、返金保証制度はございません。<br>
+        ・VISA / Mastercard / AMEX / JCB のクレジットカードがご利用いただけます。
+      </p>
+    </div>
+
+    <div class="divider">✦</div>
+
+    <div class="scope">
+      <b>サポートの範囲について、正直にお伝えします。</b><br>
+      Photelier サロンは「動画で学ぶ ＋ みんなの部屋 ＋ 月1回の質問会 ＋ さちえ先生AI」で、
+      ご自身のペースで進めていただくプログラムです。<br>
+      <b>お写真の個別添削・売上設計の伴走は、Photelier Academy（本講座）のみのサポート</b>となります。
+      ここを曖昧にしたくなかったので、先に書いておきますね。<br>
+      なお、<b>ランチ会・撮影会・写真合宿などのリアルイベントは、月額とは別のお申し込み</b>になります。
+      行きたい会だけ、ご自由にご参加いただけますよ＾＾
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="sec--white">
+  <div class="wrap">
+    <div class="eyebrow">FAQ</div>
+    <h2>よくいただくご質問</h2>
+    <div class="faq">
+      <details>
+        <summary>一眼カメラを持っていません。スマホだけでも大丈夫ですか？</summary>
+        <p>大丈夫ですよ＾＾　スマホでの撮り方から動画をご用意しています。カメラをお持ちの方向けの内容も入っているので、途中でカメラを迎えても、そのまま進めていただけます。</p>
+      </details>
+      <details>
+        <summary>写真は完全に初心者です。ついていけますか？</summary>
+        <p>はい。難しいカメラ用語をいきなり出すことはしません。「なぜそう撮るのか」という考え方から順番にお話ししていきます。迷ったときは、さちえ先生AIにいつでも聞いていただけます。</p>
+      </details>
+      <details>
+        <summary>質問会はいつありますか？</summary>
+        <p>毎月<b>第4金曜の21時から</b>、オンライン（Zoom）で行います。初回だけ<b>9月18日（金）</b>で、10月からは第4金曜です。12月はクリスマスと重なるため、第3金曜に前倒しします。日程は毎月ほぼ同じなので、ご予定に入れておいていただけます。当日ご都合が合わなくても、アーカイブをいつでもご覧いただけますよ＾＾</p>
+      </details>
+      <details>
+        <summary>まとまった時間が取れません。続けられるでしょうか。</summary>
+        <p>動画は短く区切ってあるので、すきま時間で少しずつ進めていただけます。月1回の質問会も、アーカイブをご覧いただけます。ご自身のペースで大丈夫ですよ＾＾</p>
+      </details>
+      <details>
+        <summary>いつでも退会できますか？</summary>
+        <p>はい、いつでも可能です。会員サイトのホーム下部にある「お支払いとお手続き」から、ご自身でお手続きいただけます。ご連絡やお引き止めはありません。退会後は会員サイトと特典はご覧いただけなくなります。</p>
+      </details>
+      <details>
+        <summary>本講座（Photelier Academy）との違いは何ですか？</summary>
+        <p>いちばん大きな違いは、お写真の個別添削と、売上設計の個別伴走があるかどうかです。サロンは学びの場、本講座は一緒に作り込んでいく場、とお考えいただけたら嬉しいです。サロンから本講座へ進まれる方も歓迎しています。</p>
+      </details>
+      <details>
+        <summary>お写真を出さないといけませんか？</summary>
+        <p>いいえ、まったく大丈夫です。お題は月に1回ですが、出さない月があっても構いません。見ているだけでも、ちゃんと目が育っていきますよ＾＾　前に撮ったお写真を置いていただくのでも大丈夫です。</p>
+      </details>
+      <details>
+        <summary>リアルイベントには必ず参加しないといけませんか？</summary>
+        <p>ご参加は自由です。オンラインだけで進めていただいて、まったく問題ありません。ランチ会・撮影会・写真合宿は月額とは別のお申し込みになりますので、行きたい会だけお選びいただけます。本講座の方や卒業生さんもご一緒なので、行かれると一気に距離が縮まりますよ＾＾</p>
+      </details>
+      <details>
+        <summary>お教室をまだ始めていませんが、参加できますか？</summary>
+        <p>もちろんです。これから始める方こそ、最初から世界観を作り込んでいけるので、遠回りが少なくなりますよ＾＾</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 最後の挨拶 ===== -->
+<section class="sec--blue">
+  <div class="wrap">
+    <div class="eyebrow">Last message</div>
+    <h2>あなたの写真が、<br>いちばん最初のご挨拶になります</h2>
+    <div class="divider">✦</div>
+
+    <div class="talk" style="text-align:center;">
+      <p>
+        フォロワーの数は、あなたの発信に共感してくれた人の数。<br>
+        売上は、お客様から「ありがとう」をいただけた証。<br>
+        生徒さんの数は、あなた自身が積み重ねた証です。
+      </p>
+      <p>
+        写真を「発信のために仕方なく撮るもの」から、<br>
+        「自分を表現する楽しい時間」に変えていきましょう＾＾
+      </p>
+      <p>
+        あなたの作品や想いが、ちゃんと届く写真になったとき、<br>
+        「この先生に習いたい」と言ってくださる方が現れます。<br>
+        その瞬間をご一緒できたら、とても嬉しいです𓂃𓈒𓏸
+      </p>
+      <p style="font-family:var(--serif);letter-spacing:.08em;">おがた さちえ</p>
+    </div>
+
+    <div class="cta cta--onblue">
+      <a class="cta__btn" href="/subscribe">Photelier サロンに参加する<span>→</span></a>
+      <p class="cta__price">初月 924円（税込）／ 2ヶ月目以降 9,900円（税込）／ 入会金 0円</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="logo">Photelier&nbsp;Academy</div>
+  <p class="fine">
+    ※お申し込みボタンを押していただくことで、サービス利用規約およびプライバシーポリシーに同意されたものといたします。<br>
+    ※本サービスは月額課金制のサブスクリプションです。ご自身で退会のお手続きをされない場合、翌月同日にご登録のクレジットカードへ自動的にご請求となります。<br>
+    ※決済完了後、会員サイトのご案内メールをお送りします。メールアドレスのお間違いにご注意ください（迷惑メールフォルダもご確認ください）。<br>
+    ※本商品の購入者様には、メールマガジン・ダイレクトメールをお送りすることに同意されたものといたします。
+  </p>
+  <p class="copy">Copyright &copy; Photelier Academy All Rights Reserved.</p>
+</footer>
+
+<div class="fixed-cta">
+  <a href="/subscribe">Photelier サロンに参加する<small>初月924円（税込）／ 入会金0円</small></a>
+</div>
+
+</body>
+</html>
