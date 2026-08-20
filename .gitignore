@@ -11,7 +11,11 @@ conversations/
 *.bak
 *.bak_*
 mock/
-static/mock-assets/
+
+# LPと会員サイトで使う写真はGitHubに上げる（上げないと本番で画像が出ない）。
+# 使っていない古いものだけ、のせない。
+static/mock-assets/hero_old_backup.jpg
+static/mock-assets/photo1.jpg
 
 # 手元用の内部メモ（公開リポジトリなので上げない）
 公開前チェックリスト.md
