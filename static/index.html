@@ -2747,7 +2747,10 @@
         : `<button class="ph-btn" onclick="goChat('')">チャットで相談する <span class="ph-btn__arrow">→</span></button>`;
       return;
     }
-    step.textContent = homeTier() === 'subscription'
+    // ひと月ずつ開いていく方にだけ「◯ヶ月目」を出す。
+    // 全開放された方は最初からぜんぶ見られるので、月は関係ない（出すと1000ヶ月目になる）
+    const showMonth = homeTier() === 'subscription' && !(member && member.full_unlock);
+    step.textContent = showMonth
       ? `${homeUnlocked() + 1}ヶ月目 ・ ${next.cat.ja}`
       : next.cat.ja;
     title.textContent = next.video.title;
