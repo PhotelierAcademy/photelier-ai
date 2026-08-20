@@ -503,6 +503,59 @@ async def require_owner(student_name: str, authorization: Optional[str],
 LIBRARY_PATH = Path("data/video_library.json")
 
 
+# ---- AIさちえ先生に「どの動画があるか」を覚えていただく ----
+# これを渡しておかないと、「どの動画から見たらいい？」と聞かれたときに
+# 実在しない動画名を作ってしまう。カテゴリと本当のタイトルだけを渡す。
+
+def build_video_catalog() -> str:
+    try:
+        data = json.loads(LIBRARY_PATH.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"⚠️ 動画一覧を読めませんでした: {e}")
+        return ""
+    lines = []
+    for c in data.get("categories", []):
+        # リアルセミナーは40本あり、日付ごとの記録なので「見る順番」の案内には使わない
+        if c.get("slug") == "seminar":
+            continue
+        titles = [v.get("title") for v in c.get("videos", []) if v.get("title")]
+        if not titles:
+            continue
+        lines.append(f"\n【{c.get('ja')}】")
+        lines += [f"- {t}" for t in titles]
+    return "\n".join(lines)
+
+
+VIDEO_GUIDE = """
+
+---
+
+## 動画教材の一覧（ご案内していいのは、この中にあるものだけ）
+""" + build_video_catalog() + """
+
+## 「どの動画から見たらいいですか？」と聞かれたときの答え方
+
+必ずこの順で進めること。
+
+1. まず2つだけおたずねする（3つ以上は聞かない）
+   ・いま何を撮りたいか（ご自分の作品／販売する商品／お教室の様子 など）
+   ・いちばんの悩みはどれに近いか（撮り方が分からない／写真がそろわない／撮れるけれど集客につながらない）
+2. 上の一覧から **3本だけ** 選び、見る順番に並べてお伝えする。4本以上は出さない
+3. 1本ごとに「なぜこの方にこれが要るのか」を1行そえる
+4. 最後に「まず1本目を見て、撮った1枚を持ってきてくださいね」と結ぶ
+
+選び方の目安
+- 撮り方そのものが不安 → スマホ・カメラ基礎 → テーブルフォト
+- 写真の雰囲気がそろわない・自分の色が分からない → 世界観設計 → テーブルフォト
+- きれいに撮れるのに暗い・色が濁る → ライティング → レタッチ
+- 撮れるけれど集客につながらない → 世界観設計 → マーケティング基礎 → インスタ発信・集客
+- 発信しているのに申し込みが来ない → インスタ発信・集客 → 商品設計・LP・セールス
+
+★一覧にない動画の名前を作らないこと。近いものが分からなければ、一覧の中から選び直す。
+★1本目を見終えた方が戻ってきたら、次の1本と、その前に撮ってみることを1つだけお伝えする。
+"""
+
+
 def legacy_names() -> list:
     """お名前を選んで入る方（既存6名）。11月にサポートが終わるまでの経過措置。"""
     if not STUDENTS_PATH.exists():
@@ -957,6 +1010,10 @@ QA_DEADLINE_DAYS = 3          # 開催の3日前で締め切る（準備の時�
 # このURLは、ログインしている会員さんの画面にだけ出す。
 QA_ZOOM_URL = "https://us02web.zoom.us/j/86947628346?pwd=5dbZMfks8X6VpWIYssAxs4fJZDRa1z.1"
 
+# 本講座のリアルセミナー（基本は毎週水曜 10:00〜12:00）のzoomの部屋。
+# 受講生の画面にだけ出る。URLが決まったら、この1行に貼る（空のままなら、ボタンは出ない）。
+SEMINAR_ZOOM_URL = "https://us02web.zoom.us/j/7103987614?pwd=YlNoTTd1TlRlOFhjd2QydXVYa0VGdz09&omn=86751484388"
+
 # その月だけ日をずらしたいとき。{(年, 月): 開催日}
 # 用が済んだ行は消さずに残しておくと、あとから「あの月はいつだったか」を追える。
 QA_OVERRIDES = {
@@ -1010,6 +1067,8 @@ async def qa_next(authorization: str = Header(None)):
     try:
         await member_from_token(authorization)
         result["zoom_url"] = QA_ZOOM_URL
+        if SEMINAR_ZOOM_URL:
+            result["seminar_zoom_url"] = SEMINAR_ZOOM_URL
     except HTTPException:
         pass
     return result
@@ -1086,18 +1145,27 @@ async def mark_question(question_id: int, answered: bool = True,
 class AnnouncementRequest(BaseModel):
     title: str
     body: str
+    audience: str = "all"   # all=みなさん / salon=サロン会員だけ / course=受講生だけ
 
 
 @app.get("/api/announcements")
 async def list_announcements(authorization: str = Header(None)):
-    """会員さん向け。新しいものから5件だけ返す。"""
-    await member_from_token(authorization)
+    """会員さん向け。新しいものから5件だけ返す。
+    質問会はサロン、リアルセミナーは本講座のもの。宛先の違うお知らせは出さない。"""
+    member = await member_from_token(authorization)
+    mine = "salon" if member["tier"] == "subscription" else "course"
     try:
-        rows = supabase.table("announcements").select("*").order(
+        rows = supabase.table("announcements").select("*").in_(
+            "audience", ["all", mine]).order(
             "created_at", desc=True).limit(5).execute().data or []
     except Exception:
-        # まだ Supabase に表を作っていないとき。ホーム画面まで止めない。
-        return {"announcements": [], "ready": False}
+        # まだ Supabase に表を作っていない／audience の列がまだないとき。
+        # ホーム画面を止めたくないので、宛先なしで出す。
+        try:
+            rows = supabase.table("announcements").select("*").order(
+                "created_at", desc=True).limit(5).execute().data or []
+        except Exception:
+            return {"announcements": [], "ready": False}
     return {"announcements": rows, "ready": True}
 
 
@@ -1109,9 +1177,10 @@ async def add_announcement(request: AnnouncementRequest,
     body = request.body.strip()
     if not title or not body:
         raise HTTPException(status_code=400, detail="タイトルと本文を入れてください")
+    audience = request.audience if request.audience in ("all", "salon", "course") else "all"
     try:
         supabase.table("announcements").insert(
-            {"title": title, "body": body}).execute()
+            {"title": title, "body": body, "audience": audience}).execute()
     except Exception:
         # まだ Supabase に表を作っていないとき
         raise HTTPException(status_code=503, detail="お知らせの置き場所（announcements）がまだありません。Supabase の SQL Editor で schema_announcements.sql を実行してください。")
@@ -1339,7 +1408,23 @@ async def chat(request: ChatRequest, authorization: str = Header(None)):
 
     save_conversation(request.student_name, history)
 
-    system_message = SYSTEM_PROMPT + knowledge_base
+    # 課題リストと提出ボタンがあるのは既存6名だけ（お名前で入る方）。
+    # 新しい受講生とサロン会員に「課題リストにチェックを入れてね」と言うと、
+    # 画面にないものを探させてしまう。個別セッションの予約も、もうない。
+    has_tasks = request.student_name in legacy_names()
+    tier_note = "" if has_tasks else """
+
+---
+
+## この方について（大切）
+
+この方の画面には、課題リストも提出ボタンもありません。個別セッションもありません。
+- 「課題リストにチェックを入れてね」「提出してね」「予約してね」とは言わないこと
+- 撮ってもらいたいときは「撮ったら、ここに写真を送ってくださいね」とお伝えする
+- 写真を送ってもらったら、この場でそのまま見て、よいところと直すところを1つずつ返す
+"""
+
+    system_message = SYSTEM_PROMPT + VIDEO_GUIDE + tier_note + knowledge_base
     if request.image:
         messages_with_system = [{"role": "system", "content": system_message}] + history[:-1] + [{"role": "user", "content": user_content}]
     else:

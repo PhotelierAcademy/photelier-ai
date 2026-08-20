@@ -1567,13 +1567,13 @@
     <div class="howto-logo">Photelier&nbsp;Academy</div>
     <h2 id="howto-title">サロンの歩き方</h2>
     <p class="subtitle" id="howto-subtitle">3つのステップで、今日から始められます。</p>
-    <!-- サブスク会員むけ（課題・添削なし） -->
+    <!-- サロン会員・新しい受講生むけ（課題・添削なし） -->
     <div class="howto-steps" id="howto-steps-sub" style="display:none">
       <div class="howto-step">
         <div class="howto-num">01</div>
         <div class="howto-step-text">
-          <h3>今月ひらいた動画を見る</h3>
-          <p>右上の「動画教材」から、いま見られる動画が開けます。ひと月ごとに新しい分がひらいていきます。</p>
+          <h3 id="howto-sub-01-title">今月ひらいた動画を見る</h3>
+          <p id="howto-sub-01-text">右上の「動画教材」から、いま見られる動画が開けます。ひと月ごとに新しい分がひらいていきます。</p>
         </div>
       </div>
       <div class="howto-step">
@@ -1811,8 +1811,20 @@
       <div class="actions" id="home-today-actions"></div>
     </div>
 
-    <!-- 次の質問会。日程はサーバー（/api/qa-next）が決めている -->
-    <div class="qa-bar">
+    <!-- 本講座のリアルセミナー。受講生にだけ出る（サロン会員には質問会を出す） -->
+    <div class="qa-bar" id="home-seminar" style="display:none;">
+      <div class="av">🗓</div>
+      <div class="txt">
+        <b>リアルセミナーは 毎週水曜 10:00〜12:00 です</b>
+        <small>その場でご質問いただけます。ご都合が合わない週も、あとから「動画教材」のリアルセミナーでご覧いただけます。<br>
+          zoomのお名前は <b>ニックネーム（お仕事の内容）</b> に変えていただけると、みなさんがお顔とお名前を早く覚えられます。</small>
+      </div>
+      <a class="ph-btn" id="home-seminar-zoom" target="_blank" rel="noopener noreferrer"
+         style="display:none;">zoomで参加する →</a>
+    </div>
+
+    <!-- 次の質問会（サロン会員だけ）。日程はサーバー（/api/qa-next）が決めている -->
+    <div class="qa-bar" id="home-qa-bar">
       <div class="av">🗓</div>
       <div class="txt">
         <b>次の質問会は <span id="home-qa-date">…</span> 21:00〜</b>
@@ -1915,6 +1927,16 @@
           <span class="ph-eyebrow--dash">Diagnosis 02</span>
           <h3>集客の現在地チェック</h3>
           <small>お客様が集まるまでの道のりの、どこで止まっているかがわかります。</small>
+        </div>
+        <div class="ph-arrow">»</div>
+      </div>
+      <!-- 診断のあと、どこから手をつけるかが決まらないと止まってしまう。ここで3本に絞る -->
+      <div class="ph-card step-card" style="grid-column:1/-1;"
+           onclick="goChat('どの動画から見たらいいですか？')">
+        <div class="body">
+          <span class="ph-eyebrow--dash">Next Step</span>
+          <h3>わたしは、どの動画から見たらいい？</h3>
+          <small>いま撮りたいものと、いちばんの悩みをお伝えください。あなたが最初に見る3本を、順番にしてお返しします。</small>
         </div>
         <div class="ph-arrow">»</div>
       </div>
@@ -2108,9 +2130,12 @@
     document.getElementById('member-name').textContent = withSan(m.name);
     document.getElementById('member-name').style.display = 'inline';
     document.getElementById('logout-btn').style.display = 'inline-block';
-    // サブスク会員は添削がないので、課題まわりと個別セッションは出さない。
+    // サロン会員と、新しい受講生（2026-08〜）は、課題の添削と個別セッションがない。
+    // だから提出ボタンと予約ボタンは出さない。課題リストも出さない（中に
+    // 「個別セッションを予約しよう」と書いてあり、もう予約できないため）。
     // チャットのやりとり自体が学びの記録になるので「会話をリセット」も出さない。
-    if (m.tier === 'subscription') {
+    // ★既存6名はここを通らない（お名前で入る方は member が null）。今までどおりのまま。
+    if (m.tier === 'subscription' || m.tier === 'course') {
       ['checklist-btn', 'submit-btn', 'booking-btn', 'reset-btn'].forEach(id => {
         document.getElementById(id).style.display = 'none';
       });
@@ -2235,9 +2260,10 @@
         const 期限 = data.sessions_deadline ? new Date(data.sessions_deadline) : null;
         const 期限切れ = 期限 !== null && 期限 < new Date();
         // お名前を切り替えたときに、前の方の状態が残らないように毎回入れ直す。
-        // サロン会員にはもともと個別セッションがないので、そちらはさわらない。
+        // サロン会員と新しい受講生にはもともと個別セッションがないので、そちらはさわらない。
         const bookingBtn = document.getElementById('booking-btn');
-        if (bookingBtn && !(member && member.tier === 'subscription')) {
+        const noSession = member && (member.tier === 'subscription' || member.tier === 'course');
+        if (bookingBtn && !noSession) {
           bookingBtn.style.display = 期限切れ ? 'none' : '';
         }
         if (残り === null || 残り === undefined || 残り <= 0 || 期限切れ) {
@@ -2405,8 +2431,19 @@
   }
 
   async function homeQaBoot() {
+    // 月1回の質問会はサロンのもの。受講生には毎週水曜のリアルセミナーをお出しする
+    const isSalon = homeTier() === 'subscription';
+    document.getElementById('home-seminar').style.display = isSalon ? 'none' : '';
+    document.getElementById('home-qa-bar').style.display = isSalon ? '' : 'none';
+    document.getElementById('home-qa-form').style.display = 'none';
     try {
       const qa = await (await fetch('/api/qa-next', { headers: authHeaders() })).json();
+      if (qa.seminar_zoom_url) {
+        const sz = document.getElementById('home-seminar-zoom');
+        sz.href = qa.seminar_zoom_url;
+        sz.style.display = '';
+      }
+      if (!isSalon) return;   // ここから下は質問会のぶん
       document.getElementById('home-qa-date').textContent = homeQaFormat(qa.next);
       // zoomのURLは会員さんにだけサーバーから返ってくる
       if (qa.zoom_url) {
@@ -2694,18 +2731,20 @@
     const desc = document.getElementById('home-today-desc');
     const actions = document.getElementById('home-today-actions');
 
-    // サブスク会員は添削がないので、提出ではなくチャットに誘導する
+    // 月ごとに開いていくのはサロン会員だけ（受講生は最初から全部ひらいている）
     const sub = homeTier() === 'subscription';
+    // 写真を提出できるのは既存6名だけ。ほかの方は添削がないので、チャットに誘導する
+    const canSubmit = (member === null);
 
     if (!next) {
       step.textContent = sub ? '今開いている分は、ぜんぶ見終わりました' : 'すべて視聴済みです';
-      title.textContent = sub ? '撮った1枚を、見直してみましょう' : '撮った1枚を、見せてください';
-      desc.textContent = sub
-        ? '迷ったところをチャットで聞くと、AIさちえ先生が一緒に考えます。'
-        : '写真を提出すると、さちえ先生が直接見ます。';
-      actions.innerHTML = sub
-        ? `<button class="ph-btn" onclick="goChat('')">チャットで相談する <span class="ph-btn__arrow">→</span></button>`
-        : `<button class="ph-btn" onclick="openSubmitModal()">写真を提出する</button>`;
+      title.textContent = canSubmit ? '撮った1枚を、見せてください' : '撮った1枚を、見直してみましょう';
+      desc.textContent = canSubmit
+        ? '写真を提出すると、さちえ先生が直接見ます。'
+        : '迷ったところをチャットで聞くと、AIさちえ先生が一緒に考えます。';
+      actions.innerHTML = canSubmit
+        ? `<button class="ph-btn" onclick="openSubmitModal()">写真を提出する</button>`
+        : `<button class="ph-btn" onclick="goChat('')">チャットで相談する <span class="ph-btn__arrow">→</span></button>`;
       return;
     }
     step.textContent = homeTier() === 'subscription'
@@ -2714,7 +2753,7 @@
     title.textContent = next.video.title;
     // 動画の中身によって、次にやることが変わる（撮影の課題ではないものもある）
     const TODAY_DESC = {
-      'introduction': 'まずはここから。この場の使い方と、進め方をお話ししています。見たら「視聴済み」にしてくださいね。',
+      'introduction': 'まずはこの動画からご覧ください。講座の進め方をお話ししています。見たら「視聴済み」にしてくださいね。',
       'worldview': 'まずはこの1本から。見たら「視聴済み」にして、ご自分のことを書き出してみましょう。',
       'marketing-basics': 'まずはこの1本から。見たら「視聴済み」にして、ご自分の発信にあてはめてみましょう。',
       'sns-growth': 'まずはこの1本から。見たら「視聴済み」にして、ご自分の発信にあてはめてみましょう。',
@@ -2724,9 +2763,9 @@
       || 'まずはこの1本から。見たら「視聴済み」にして、実際に1枚撮ってみましょう。';
     actions.innerHTML =
       `<button class="ph-btn" onclick="openLibrary('${next.cat.slug}', ${next.idx})">動画で学ぶ <span class="ph-btn__arrow">→</span></button>` +
-      (sub
-        ? `<button class="ph-btn ph-btn--ghost" onclick="goChat('')">チャットで相談する</button>`
-        : `<button class="ph-btn ph-btn--ghost" onclick="openSubmitModal()">写真を提出する</button>`);
+      (canSubmit
+        ? `<button class="ph-btn ph-btn--ghost" onclick="openSubmitModal()">写真を提出する</button>`
+        : `<button class="ph-btn ph-btn--ghost" onclick="goChat('')">チャットで相談する</button>`);
   }
 
   async function goChat(prefill) {
@@ -2736,13 +2775,26 @@
     if (!chatLoaded) {
       chatLoaded = true;
       await loadConversation(homeDisplayName());
-      const sub = homeTier() === 'subscription';
-      document.getElementById('howto-steps-sub').style.display = sub ? 'flex' : 'none';
-      document.getElementById('howto-steps-course').style.display = sub ? 'none' : 'flex';
-      document.getElementById('howto-title').textContent = sub ? 'サロンの歩き方' : '講座の進め方';
-      document.getElementById('howto-subtitle').textContent = sub
-        ? '3つのステップで、今日から始められます。'
-        : '3つのステップで、課題を進めていきましょう。';
+      // 課題と提出があるのは既存6名だけ（お名前で入る方 = member が null）。
+      // サロン会員と新しい受講生には、課題のない「歩き方」をお見せする。
+      const hasTasks = (member === null);
+      const isCourse = homeTier() === 'course';
+      document.getElementById('howto-steps-sub').style.display = hasTasks ? 'none' : 'flex';
+      document.getElementById('howto-steps-course').style.display = hasTasks ? 'flex' : 'none';
+      if (!hasTasks) {
+        // 受講生は最初から全部ひらいている。サロン会員はひと月ずつひらいていく
+        document.getElementById('howto-sub-01-title').textContent =
+          isCourse ? '好きなところから動画を見る' : '今月ひらいた動画を見る';
+        document.getElementById('howto-sub-01-text').textContent = isCourse
+          ? '右上の「動画教材」から、すべての動画が見られます。順番に迷ったら、チャットで聞いてくださいね。'
+          : '右上の「動画教材」から、いま見られる動画が開けます。ひと月ごとに新しい分がひらいていきます。';
+      }
+      document.getElementById('howto-title').textContent = hasTasks
+        ? '講座の進め方'
+        : (isCourse ? '講座の歩き方' : 'サロンの歩き方');
+      document.getElementById('howto-subtitle').textContent = hasTasks
+        ? '3つのステップで、課題を進めていきましょう。'
+        : '3つのステップで、今日から始められます。';
       document.getElementById('howto-modal').classList.add('open');
     }
     if (prefill) {

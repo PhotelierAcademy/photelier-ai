@@ -632,6 +632,11 @@
     <div class="qa-form">
       <label class="wide">タイトル<input type="text" id="ann-title" placeholder="9月の質問会について"></label>
       <label class="wide">本文<textarea id="ann-body" rows="4" placeholder="改行はそのまま表示されます。"></textarea></label>
+      <label class="wide">どなたに出す？<select id="ann-audience">
+        <option value="all">みなさん（サロン会員＋受講生）</option>
+        <option value="salon">サロン会員だけ（質問会のことなど）</option>
+        <option value="course">受講生だけ（リアルセミナーのことなど）</option>
+      </select></label>
       <button class="qa-add" id="ann-add-btn" onclick="addAnn()">お知らせを出す</button>
     </div>
     <div id="ann-list"><div class="loading">読み込み中...</div></div>
@@ -1145,13 +1150,14 @@
         box.innerHTML = '<div class="no-data">まだお知らせはありません😊</div>';
         return;
       }
+      const あて先 = { all: 'みなさん', salon: 'サロン会員だけ', course: '受講生だけ' };
       box.innerHTML = list.map(a => {
         const d = new Date(a.created_at);
         return `
         <div class="qa-row" style="align-items:flex-start;">
           <span class="qa-row__date">${d.getMonth() + 1}月${d.getDate()}日</span>
           <span class="qa-row__title">${annEscape(a.title)}
-            <span class="qa-row__body-sm">${annEscape(a.body)}</span></span>
+            <span class="qa-row__body-sm">［${あて先[a.audience] || 'みなさん'}］${annEscape(a.body)}</span></span>
           <button class="qa-row__del" onclick="deleteAnn(${a.id})">削除</button>
         </div>`;
       }).join('');
@@ -1173,7 +1179,7 @@
       const res = checkAuth(await fetch('/api/announcements', {
         method: 'POST',
         headers: Object.assign({ 'Content-Type': 'application/json' }, tHeaders()),
-        body: JSON.stringify({ title, body })
+        body: JSON.stringify({ title, body, audience: document.getElementById('ann-audience').value })
       }));
       if (!res.ok) {
         alert((await res.json()).detail || '出せませんでした');
