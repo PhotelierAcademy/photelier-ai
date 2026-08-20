@@ -1275,7 +1275,9 @@
     #library-overlay .tiles { display: grid; grid-template-columns: repeat(3,1fr); gap: clamp(18px,2.2vw,30px); }
     /* 枠の見た目は design-tokens.css の .ph-tile に持たせた（ホームと同じ顔になる）。
        ここは動画教材の中だけの調整にとどめる。 */
-    #library-overlay .ph-tile { min-height: 156px; transition: transform .3s, box-shadow .3s; }
+    #library-overlay .ph-tile { min-height: 156px; transition: transform .3s, box-shadow .3s;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 26px clamp(20px,2.4vw,28px) 40px; }
     #library-overlay .ph-tile::before { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
       border: 1px solid rgba(255,255,255,.55); border-radius: 4px; }
     #library-overlay .ph-tile:hover { transform: translateY(-3px); box-shadow: 0 20px 42px -16px rgba(61,85,100,.34); }
@@ -1286,8 +1288,7 @@
     #library-overlay .ph-tile__photo::after { content: ""; position: absolute; inset: 0;
       background: linear-gradient(90deg, rgba(233,240,245,.6) 0%, rgba(233,240,245,.12) 40%, rgba(233,240,245,0) 70%); }
     #library-overlay .ph-tile:hover .ph-tile__photo { transform: scale(1.04); }
-    #library-overlay .ph-tile__label { position: absolute; left: clamp(20px,2.4vw,28px); top: 50%;
-      transform: translateY(-50%); z-index: 2; max-width: 62%; }
+    #library-overlay .ph-tile__label { position: relative; z-index: 2; max-width: 62%; }
     #library-overlay .ph-tile__ja { display: block; font-family: var(--serif); color: var(--text); font-weight: 600;
       font-size: clamp(17px,1.5vw,22px); letter-spacing: .04em; line-height: 1.32; text-shadow: 0 1px 8px rgba(255,255,255,.7); }
     #library-overlay .ph-tile__ja small { display: block; font-size: 12px; font-weight: 600; margin-top: 3px; letter-spacing: .03em; }
@@ -1371,14 +1372,17 @@
     @media(max-width:620px){ #home-screen .firststeps { grid-template-columns: 1fr; } }
 
     #home-screen .tiles { display: grid; grid-template-columns: repeat(3,1fr); gap: clamp(16px,2vw,26px); margin-top: 24px; }
-    #home-screen .ph-tile { position: relative; min-height: 158px; overflow: hidden; cursor: pointer; }
+    /* 文字を真ん中に「浮かせる」のではなく、上下の余白で置く。
+       こうしておくと、（　）の説明が2行になっても本数の文字と重ならない。 */
+    #home-screen .ph-tile { position: relative; min-height: 158px; overflow: hidden; cursor: pointer;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 26px clamp(20px,2.4vw,30px) 40px; }
     #home-screen .ph-tile__photo { position: absolute; top: 0; right: 0; bottom: 0; width: 66%;
       background-size: cover; background-position: center; transition: transform .5s;
       -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.35) 24%, #000 58%);
               mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.35) 24%, #000 58%); }
     #home-screen .ph-tile:hover .ph-tile__photo { transform: scale(1.04); }
-    #home-screen .ph-tile__label { position: absolute; left: clamp(20px,2.4vw,30px); top: 50%; transform: translateY(-50%);
-      z-index: 2; max-width: 60%; }
+    #home-screen .ph-tile__label { position: relative; z-index: 2; max-width: 60%; }
     #home-screen .ph-tile__ja { display: block; font-size: clamp(18px,1.6vw,24px); letter-spacing: .04em;
       line-height: 1.32; text-shadow: 0 1px 8px rgba(255,255,255,.7); }
     #home-screen .ph-tile__ja small { display: block; font-size: 12.5px; font-weight: 600; margin-top: 3px; letter-spacing: .03em; }
