@@ -1284,12 +1284,14 @@ async def password_reset(request: Request, body: PasswordResetRequest):
     """パスワード再発行メールを Supabase から送る。さちえ先生の手はかからない。
     メールのリンクを押すと /reset-password（新しいパスワードを決める画面）に着く。"""
     base = str(request.base_url).rstrip("/")
+    redirect_to = f"{base}/reset-password"
     async with httpx.AsyncClient(timeout=15) as http:
         await http.post(
             f"{SUPABASE_URL}/auth/v1/recover",
+            params={"redirect_to": redirect_to},  # Supabase は本文ではなくURLのクエリを見る
             headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
             json={"email": body.email.strip().lower(),
-                  "redirect_to": f"{base}/reset-password"},
+                  "redirect_to": redirect_to},
         )
     # 登録の有無は返さない（メールアドレスの存在確認に使われないように）
     return {"status": "ok"}
