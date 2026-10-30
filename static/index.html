@@ -1913,6 +1913,19 @@
       <p class="room-note">はじめてお使いになるときは、無料のChatGPTアカウントを作ってからひらいてくださいね＾＾</p>
     </div>
 
+    <!-- 発信ネタ出しツール（本講座の受講生だけに出す） -->
+    <div class="firststeps" id="home-hasshin" style="display:none; margin-bottom:0;">
+      <div class="ph-card step-card" style="grid-column:1/-1;"
+           onclick="window.open('/hasshin','_blank')">
+        <div class="body">
+          <span class="ph-eyebrow--dash">本講座の方だけ</span>
+          <h3>発信ネタ出しツール</h3>
+          <small>あなたのカルテをもとに、今週の一言から1週間分の投稿ネタと投稿文ができあがります。</small>
+        </div>
+        <div class="ph-arrow">»</div>
+      </div>
+    </div>
+
     <div class="ph-divider">✦</div>
 
     <p class="ph-eyebrow">First Steps</p>
@@ -2384,6 +2397,9 @@
     // 個別相談も、サロン会員だけに出す
     document.getElementById('home-consult').style.display =
       (member && member.tier === 'subscription') ? '' : 'none';
+    // 発信ネタ出しツールは、本講座の受講生だけに出す
+    document.getElementById('home-hasshin').style.display =
+      (member && member.tier === 'course') ? '' : 'none';
     const coming = homeComingCount();
     document.getElementById('billing-coming').textContent =
       coming > 0 ? `これから開く動画が、あと${coming}本あります。` : '';

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>発信ネタ出し｜Photelier Academy</title>
+<style>
+  :root {
+    --navy: #3D5564;
+    --blue: #6B9BB5;
+    --band: #E8EFF4;
+    --cream: #FAF7F2;
+    --gold: #B99B6B;
+    --line: #E3DED6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px 80px; background: #EFEBE4; color: var(--navy); font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; }
+  .top { max-width: 460px; margin: 0 auto 14px; display: flex; justify-content: space-between; align-items: center; }
+  .top a { font-size: 12px; color: var(--blue); text-decoration: none; letter-spacing: .08em; }
+  .top .who { font-size: 12px; color: #8C98A2; }
+  .phone { max-width: 460px; margin: 0 auto; background: var(--cream); border-radius: 24px; border: 1px solid var(--line); overflow: hidden; box-shadow: 0 10px 30px rgba(61,85,100,.08); }
+  .head { background: var(--band); padding: 18px 20px 14px; }
+  .head .app { font-size: 11px; letter-spacing: .25em; color: var(--blue); }
+  .head h1 { margin: 6px 0 2px; font-size: 18px; letter-spacing: .1em; }
+  .head p { margin: 0; font-size: 12px; color: #6E7E8A; line-height: 1.9; }
+  .vlinks { margin-top: 6px; }
+  .vlinks a { display: inline-block; font-size: 11px; color: var(--blue); letter-spacing: .05em; margin-right: 12px; text-decoration: none; border-bottom: 1px dotted var(--blue); }
+  .body { padding: 20px; }
+  .q { margin-bottom: 18px; }
+  .q label { display: block; font-size: 13px; letter-spacing: .06em; margin-bottom: 6px; }
+  .q small { color: #8C98A2; font-size: 11px; margin-left: 6px; }
+  .hint { font-size: 11px; color: #A9B4BC; margin-top: 6px; line-height: 1.8; }
+  textarea, input[type=text] { width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.9; color: var(--navy); font-family: inherit; resize: vertical; }
+  textarea:focus, input:focus { outline: none; border-color: var(--blue); }
+  .box { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.9; color: #5A6B77; white-space: pre-wrap; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pills.col { flex-direction: column; align-items: flex-start; }
+  .pill { font-size: 12px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: #7A8893; cursor: pointer; font-family: inherit; text-align: left; line-height: 1.7; }
+  .pill.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .pill.more { border-style: dashed; }
+  .btn { display: block; width: 100%; border: none; padding: 15px; border-radius: 999px; background: var(--blue); color: #fff; font-family: inherit; font-size: 14px; letter-spacing: .15em; margin-top: 6px; cursor: pointer; }
+  .btn.ghost { background: #fff; color: var(--blue); border: 1px solid var(--blue); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .once { text-align: center; font-size: 11px; color: var(--gold); letter-spacing: .1em; margin: 0 0 14px; }
+  .chat { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .chat .ai { align-self: flex-start; max-width: 88%; background: var(--band); border-radius: 14px 14px 14px 4px; padding: 10px 14px; font-size: 13px; line-height: 1.9; }
+  .chat .me { align-self: flex-end; max-width: 88%; background: #fff; border: 1px solid var(--line); border-radius: 14px 14px 4px 14px; padding: 10px 14px; font-size: 13px; line-height: 1.9; color: #5A6B77; }
+  .decide { background: #fff; border: 1px solid var(--gold); border-radius: 14px; padding: 14px 18px; position: relative; margin-top: 12px; }
+  .decide .badge { position: absolute; top: -10px; left: 16px; background: var(--gold); color: #fff; font-size: 11px; letter-spacing: .15em; padding: 3px 12px; border-radius: 999px; }
+  .decide p { margin: 6px 0 0; font-size: 13px; line-height: 2; white-space: pre-wrap; }
+  .today { background: #fff; border: 1px solid var(--gold); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; position: relative; }
+  .today .badge { position: absolute; top: -10px; left: 16px; background: var(--gold); color: #fff; font-size: 11px; letter-spacing: .15em; padding: 3px 12px; border-radius: 999px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; margin-bottom: 10px; }
+  .type { font-size: 11px; letter-spacing: .12em; color: var(--blue); margin-bottom: 6px; }
+  .type em { font-style: normal; color: #A9B4BC; margin-left: 8px; }
+  .hook { font-size: 14px; line-height: 1.9; margin: 0 0 8px; }
+  .hook b { background: linear-gradient(transparent 62%, #F1E7D4 62%); font-weight: normal; }
+  .row { font-size: 12px; color: #6E7E8A; line-height: 2; }
+  .row i { font-style: normal; color: var(--gold); margin-right: 6px; }
+  .mut { color: #A9B4BC; }
+  .copy { font-size: 11px; color: var(--blue); border: 1px solid var(--blue); border-radius: 999px; padding: 4px 14px; background: #fff; font-family: inherit; cursor: pointer; }
+  .loading { text-align: center; color: #8C98A2; font-size: 13px; padding: 30px 0; letter-spacing: .1em; }
+  .spin { display: inline-block; animation: sp 1.2s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .backline { font-size: 12px; color: #8C98A2; margin-bottom: 14px; }
+  .backline a { color: var(--blue); cursor: pointer; text-decoration: none; border-bottom: 1px dotted var(--blue); }
+  .view { display: none; }
+  .view.on { display: block; }
+  .nblock { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .nblock .nt { font-size: 12px; color: #8C98A2; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a href="/course">← アプリにもどる</a>
+  <span class="who" id="who"></span>
+</div>
+
+<div class="phone">
+  <div class="head" id="head">
+    <div class="app">PHOTELIER ACADEMY</div>
+    <h1 id="head-title">発信ネタ出し</h1>
+    <p id="head-desc">読み込んでいます…</p>
+    <div class="vlinks" id="head-videos"></div>
+  </div>
+  <div class="body">
+
+    <!-- 読み込み中 / 入れない時 -->
+    <div class="view on" id="v-gate">
+      <div class="loading" id="gate-msg"><span class="spin">✦</span> 読み込んでいます…</div>
+    </div>
+
+    <!-- はじめて（カルテなし） -->
+    <div class="view" id="v-home">
+      <div class="q">
+        <div class="box">毎回ネタを考えるのをやめる。
+1つの作品を、7つの型で割る。
+
+最初に1回だけ、あなたのことを教えてください。
+次からは一言入れるだけで、1週間分の発信ネタが出ます。</div>
+      </div>
+      <button class="btn" onclick="go('karte')">サービスは決まっています（カルテをつくる）</button>
+      <button class="btn ghost" onclick="go('zero')">なんのサービスにするか、まだ迷っています</button>
+    </div>
+
+    <!-- ⓪ サービスを決める対話 -->
+    <div class="view" id="v-zero">
+      <div class="backline"><a onclick="go('home')">← もどる</a></div>
+      <div class="chat" id="zero-chat"></div>
+      <div id="zero-input-area">
+        <textarea id="zero-input" rows="2" placeholder="ここに書いて「送る」を押してください"></textarea>
+        <button class="btn" id="zero-send" onclick="zeroSend()">送る</button>
+      </div>
+      <div id="zero-decided" style="display:none">
+        <div class="decide">
+          <span class="badge">決まりました</span>
+          <p id="zero-summary"></p>
+        </div>
+        <button class="btn" onclick="zero2Start()">売れる市場に乗せる（つぎへ）</button>
+      </div>
+    </div>
+
+    <!-- ⓪-2 売れる市場 -->
+    <div class="view" id="v-zero2">
+      <div class="backline"><a onclick="go('zero')">← もどる</a></div>
+      <div class="q">
+        <label>ステップ1. あなたのサービス × 売れる市場<small>経験があって、言いやすいものを選ぶ</small></label>
+        <div class="pills col" id="z2-options"></div>
+      </div>
+      <div id="z2-evidence" style="display:none">
+        <div class="q">
+          <label>ステップ2. 証拠を集める<small>時間がかかって大丈夫です。ここが土台になります</small></label>
+          <div class="box" id="z2-howto"></div>
+        </div>
+        <div class="q">
+          <label>1. コメントしていたのは、どんな方でしたか？<small>その方が、あなたのお客さまです</small></label>
+          <textarea id="z2-person" rows="2"></textarea>
+        </div>
+        <div class="q">
+          <label>2. コメントに何と書いてありましたか？<small>その言葉が、発信の1行目になります</small></label>
+          <textarea id="z2-word" rows="2"></textarea>
+        </div>
+        <div class="q">
+          <label>3. 売れた跡はありましたか？<small>お金が動いた跡。同じものが無ければ、隣を見ればOK</small></label>
+          <textarea id="z2-ato" rows="2"></textarea>
+        </div>
+        <button class="btn" id="z2-decide-btn" onclick="z2Service()">サービスの形を決める</button>
+      </div>
+      <div id="z2-service" style="display:none">
+        <div class="decide">
+          <span class="badge">サービス決定</span>
+          <p id="z2-sentence"></p>
+        </div>
+        <button class="btn" onclick="go('karte')">この形でカルテをつくる</button>
+      </div>
+    </div>
+
+    <!-- ① カルテ -->
+    <div class="view" id="v-karte">
+      <div class="backline"><a onclick="go(ST.karte ? 'weekly' : 'home')">← もどる</a></div>
+      <p class="once">― 入力はこの1回だけ。あとから見直せます ―</p>
+      <div class="q">
+        <label>1. あなたのお客さまは、どんな方ですか？</label>
+        <textarea id="k-persona" rows="3" placeholder="例: 30〜40代のママ。子育てがひと段落して、自分の時間に好きなことを始めたい方"></textarea>
+      </div>
+      <div class="q">
+        <label>2. その方のお悩み<small>候補から3〜5つ。全部じゃなくていい、「よく聞くもの」から</small></label>
+        <div class="pills" id="k-nayami"></div>
+        <button class="btn ghost" id="k-nayami-btn" onclick="nayamiSuggest()">お悩みの候補を出す</button>
+        <input type="text" id="k-nayami-free" placeholder="候補にない悩みは、ここに書いてEnter（お客さまの言葉のままが◎）" style="margin-top:8px" onchange="nayamiFreeAdd()" onkeydown="if(event.key==='Enter'){event.preventDefault();nayamiFreeAdd();}">
+      </div>
+      <div class="q" id="k-scene-q" style="display:none">
+        <label>2-2. 選んだお悩みを、具体的な場面に<small>1つずつ選ぶ・違えば次の候補</small></label>
+        <div class="box" style="margin-bottom:10px">なぜ場面にするの？ → 投稿の1行目は、ここで選んだ言葉から作られるからです。
+「独学で自信がない」のままだと素通りされますが、「レシピ通りやったのに、にじむ」だと「私のことだ」と手が止まります。</div>
+        <div id="k-scenes"></div>
+        <div class="hint">どれも違うとき:「最近のお客さまが、最初に何て言ったか」を思い出して、その言葉をそのまま書いてください。</div>
+      </div>
+      <div class="q">
+        <label>3. あなたのサービスで、その悩みはどう解決できますか？</label>
+        <textarea id="k-solve" rows="3" placeholder="例: 2時間で1つ完成するので初めてでも大丈夫。少人数でその場で聞ける"></textarea>
+      </div>
+      <div class="q">
+        <label>4. なぜこのお仕事を選びましたか？ 始めてから、生活はどう変わりましたか？</label>
+        <textarea id="k-kikkake" rows="4" placeholder="きっかけと、ご自分の変化。あなただけの実話がいちばん説得力があります"></textarea>
+        <div class="hint">→ この話から「あなたにもできる」「背中を押す」のネタが作られます</div>
+      </div>
+      <div class="q">
+        <label>5. お申し込みの行き先はどこですか？<small>1つだけ</small></label>
+        <div class="pills" id="k-dest"></div>
+        <input type="text" id="k-dest-free" placeholder="その他（自由に書けます）" style="margin-top:8px">
+      </div>
+      <div class="q">
+        <label>6. お仕事のタイプ</label>
+        <div class="pills" id="k-jobtype"></div>
+      </div>
+      <button class="btn" id="k-save" onclick="karteSave()">登録する</button>
+    </div>
+
+    <!-- ①-2 プロフィール -->
+    <div class="view" id="v-profile">
+      <div class="backline"><a onclick="go('weekly')">← 発信ネタ出しへ</a></div>
+      <div class="q">
+        <label>カルテから、プロフィール文を作りました<small>直したいところだけ直してください</small></label>
+        <div class="decide">
+          <span class="badge">整えました</span>
+          <p id="p-text"></p>
+        </div>
+        <div class="hint">1行目=何の専門家か ／ 2行目=誰向けか ／ 3行目=できること ／ 最後=行き先</div>
+      </div>
+      <button class="btn" onclick="copyText(document.getElementById('p-text').textContent, this)">この文をコピーする</button>
+      <button class="btn ghost" onclick="profileShow(true)">別の案でつくり直す</button>
+      <button class="btn ghost" onclick="go('weekly')">発信ネタ出しへすすむ</button>
+    </div>
+
+    <!-- ② 毎週ここだけ -->
+    <div class="view" id="v-weekly">
+      <div class="q">
+        <label>いま作っているもの・最近のレッスンを一言どうぞ</label>
+        <textarea id="w-theme" rows="2" placeholder="例: クリスマスのアイシングクッキー、試作中"></textarea>
+      </div>
+      <button class="btn" id="w-btn" onclick="netaGenerate()">ネタを出す（1週間分）</button>
+      <div id="w-last" style="margin-top:14px"></div>
+      <div class="backline" style="margin-top:18px">
+        <a onclick="go('karte')">カルテを見直す</a>　／　<a onclick="profileShow()">プロフィール文をつくる</a>
+      </div>
+    </div>
+
+    <!-- 行き先がまだの人 -->
+    <div class="view" id="v-dest">
+      <div class="q">
+        <div class="box">ネタの前に、1つだけ。
+
+お申し込みの行き先がまだ決まっていません。
+行き先がないまま発信すると、せっかく「いいな」と思ってくださった方が、どこにも進めません。
+
+まず行き先を1つ決めましょう。体験レッスン・公式LINE・お問い合わせ・販売ページ、どれか1つで大丈夫です。</div>
+      </div>
+      <button class="btn" onclick="go('karte')">カルテで行き先を決める</button>
+    </div>
+
+    <!-- ③ 7本 -->
+    <div class="view" id="v-cards">
+      <div class="backline"><a onclick="go('weekly')">← 一言を変えてもう一度</a></div>
+      <div id="cards-list"></div>
+      <button class="btn ghost" onclick="go('weekly')">次の作品でもう7本出す</button>
+    </div>
+
+    <!-- ③-2 投稿文 -->
+    <div class="view" id="v-post">
+      <div class="backline"><a onclick="go('cards')">← 7本にもどる</a></div>
+      <div class="card" id="post-neta"></div>
+      <div class="q" id="post-plan-q" style="display:none">
+        <label>リールの構成<small>この順で撮って、つなげるだけ</small></label>
+        <div id="post-plan"></div>
+        <div class="hint">動画は スマホを置いて回すだけ でOK。凝った編集はいりません。つなげる・字幕を入れるのは Edits（Instagram公式の無料編集アプリ）で。カットの順に並べて、字幕をそのまま打ち込むだけです。</div>
+      </div>
+      <div class="q">
+        <label>投稿文<small>そのまま貼れます。直したいところだけ直してください</small></label>
+        <div class="box" id="post-feed"></div>
+      </div>
+      <button class="btn" onclick="copyText(document.getElementById('post-feed').textContent, this)">文章をコピー</button>
+      <div class="pills" style="margin-top:10px">
+        <button class="pill" onclick="postFix('もう少し短く', this)">もう少し短く</button>
+        <button class="pill" onclick="postFix('ストーリーズ用にする', this)">ストーリーズ用にする</button>
+        <button class="pill" onclick="threadsToggle(this)">スレッズ用にする</button>
+        <button class="pill" onclick="postFix('書き直す', this)">書き直す</button>
+      </div>
+      <div class="q" id="post-threads-q" style="display:none; margin-top:14px">
+        <label>スレッズ用<small>写真なしでもそのまま出せます</small></label>
+        <div class="box" id="post-threads"></div>
+        <button class="btn ghost" onclick="copyText(document.getElementById('post-threads').textContent, this)">スレッズ用をコピー</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('photelier_token');
+let ST = { karte: null, week: null, videos: {} };
+let zeroMsgs = [];          // ⓪の対話履歴
+let zeroResult = null;      // {axis, later, summary}
+let z2 = {};                // ⓪-2の途中結果
+let kart = { nayami: [] };  // カルテの下書き
+let nayamiPool = [];        // 悩み候補
+let curItems = [];          // 7本
+let curTheme = '';
+let curItem = null;         // 投稿文を作っている1本
+let curPost = null;         // {feed, threads}
+
+const HEADS = {
+  home:   { t: '発信ネタ出し', d: '受講生のための、発信がつづく道具です。', v: 'weekly' },
+  zero:   { t: 'なんのサービスにするか決める', d: '発信が止まるのは、迷っているからです。\n聞くのは、過去にあった事実だけです。', v: 'zero' },
+  zero2:  { t: '売れる市場に乗せる', d: 'ニーズは、ゼロから探しません。\n人がお金を払う市場は、もう分かっています。', v: 'zero2' },
+  karte:  { t: '誰向けのサービスにするか', d: '最初に教えてください。これを覚えておくので、\n次からは一言入れるだけです。', v: 'karte' },
+  profile:{ t: 'プロフィールを整える', d: 'リールを見た方は、プロフィールに来ます。\n何の専門家か分かるように、カルテから作りました。', v: 'profile' },
+  weekly: { t: '発信ネタ出し', d: 'いま作っているものを一言どうぞ。\nそこから1週間分の発信ネタを出します。', v: 'weekly' },
+  dest:   { t: 'まず、行き先を決める', d: 'ここが成果の分かれ目です。', v: 'destination' },
+  cards:  { t: '今週の発信ネタ', d: '上から順番に出せばOK。1日1本、撮るものは1つだけです。', v: 'cards' },
+  post:   { t: '投稿文ができました', d: 'やることは3つだけ。\n撮る → コピー → 貼る。これで今日の発信は終わりです。', v: 'cards' },
+};
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function go(view) {
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('on'));
+  document.getElementById('v-' + view).classList.add('on');
+  const h = HEADS[view] || HEADS.home;
+  document.getElementById('head-title').textContent = h.t;
+  document.getElementById('head-desc').innerHTML = esc(h.d).replace(/\n/g, '<br>');
+  const vw = document.getElementById('head-videos');
+  vw.innerHTML = '';
+  (ST.videos[h.v] || []).forEach(v => {
+    const a = document.createElement('a');
+    a.href = v.url; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = '▶ ' + v.label;
+    vw.appendChild(a);
+  });
+  if (view === 'zero' && zeroMsgs.length === 0) zeroStart();
+  if (view === 'karte') karteFill();
+  window.scrollTo(0, 0);
+}
+
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: body ? 'POST' : 'GET',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    let msg = 'うまくいきませんでした。もう一度お試しください';
+    try { msg = (await res.json()).detail || msg; } catch (e) {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+function busy(btn, on, label) {
+  if (!btn) return;
+  if (on) { btn.dataset.l = btn.textContent; btn.textContent = label || '考えています…'; btn.disabled = true; }
+  else { btn.textContent = btn.dataset.l; btn.disabled = false; }
+}
+
+async function boot() {
+  const gate = document.getElementById('gate-msg');
+  if (!token) {
+    document.getElementById('head-desc').textContent = '受講生のための、発信がつづく道具です。';
+    gate.innerHTML = 'このツールは、受講生アプリにログインしてからお使いください。<br><br><a href="/course" style="color:var(--blue)">ログイン画面をひらく →</a>';
+    return;
+  }
+  try {
+    ST = await api('/api/hasshin/state');
+    document.getElementById('who').textContent = ST.name + ' さん';
+    if (ST.karte) {
+      kart = ST.karte;
+      renderLastWeek();
+      go('weekly');
+    } else {
+      go('home');
+    }
+  } catch (e) {
+    document.getElementById('head-desc').textContent = '受講生のための、発信がつづく道具です。';
+    gate.innerHTML = esc(e.message) + '<br><br><a href="/course" style="color:var(--blue)">アプリにもどる →</a>';
+  }
+}
+
+/* ---------- ⓪ サービスを決める対話 ---------- */
+
+function zeroRender() {
+  const c = document.getElementById('zero-chat');
+  c.innerHTML = '';
+  zeroMsgs.forEach(m => {
+    const d = document.createElement('div');
+    d.className = m.role === 'assistant' ? 'ai' : 'me';
+    d.textContent = m.content;
+    c.appendChild(d);
+  });
+}
+
+function zeroStart() {
+  zeroMsgs = [{ role: 'assistant', content: 'できること・資格・好きなこと、思いつくまま挙げてください。全部で大丈夫です。' }];
+  zeroRender();
+}
+
+async function zeroSend() {
+  const ta = document.getElementById('zero-input');
+  const text = ta.value.trim();
+  if (!text) return;
+  const btn = document.getElementById('zero-send');
+  zeroMsgs.push({ role: 'user', content: text });
+  zeroRender(); ta.value = '';
+  busy(btn, true);
+  try {
+    const r = await api('/api/hasshin/ai', { mode: 'zero', data: { messages: zeroMsgs } });
+    zeroMsgs.push({ role: 'assistant', content: r.reply });
+    zeroRender();
+    if (r.decided) {
+      zeroResult = r;
+      kart.axis = r.axis;
+      document.getElementById('zero-summary').textContent = r.summary;
+      document.getElementById('zero-input-area').style.display = 'none';
+      document.getElementById('zero-decided').style.display = 'block';
+    }
+  } catch (e) { alert(e.message); }
+  busy(btn, false);
+}
+
+/* ---------- ⓪-2 売れる市場 ---------- */
+
+async function zero2Start() {
+  go('zero2');
+  const wrap = document.getElementById('z2-options');
+  wrap.innerHTML = '<span class="pill">考えています…</span>';
+  try {
+    const r = await api('/api/hasshin/ai', { mode: 'market', data: { axis: kart.axis, zero: zeroMsgs.map(m => m.content).join('\n') } });
+    z2.search_words = r.search_words; z2.ato_hint = r.ato_hint;
+    wrap.innerHTML = '';
+    r.options.forEach(o => {
+      const b = document.createElement('button');
+      b.className = 'pill';
+      b.textContent = o.market + ' ×「' + o.idea + '」';
+      b.onclick = () => {
+        wrap.querySelectorAll('.pill').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        z2.market = o.market; z2.idea = o.idea;
+        document.getElementById('z2-howto').textContent =
+          'Instagramで「' + (r.search_words || []).join('」「') + '」を検索。\nフォロワー数は見なくていいです。コメント欄の言葉だけ拾ってきてください。\n\n売れた跡: ' + (r.ato_hint || '');
+        document.getElementById('z2-evidence').style.display = 'block';
+      };
+      wrap.appendChild(b);
+    });
+    const more = document.createElement('button');
+    more.className = 'pill more';
+    more.textContent = 'どれも違う（別の掛け合わせを見る）';
+    more.onclick = zero2Start;
+    wrap.appendChild(more);
+  } catch (e) { wrap.innerHTML = '<span class="pill">' + esc(e.message) + '</span>'; }
+}
+
+async function z2Service() {
+  const btn = document.getElementById('z2-decide-btn');
+  busy(btn, true);
+  try {
+    const data = {
+      axis: kart.axis, market: z2.market, idea: z2.idea,
+      customer: document.getElementById('z2-person').value.trim(),
+      nayami_word: document.getElementById('z2-word').value.trim(),
+      ato: document.getElementById('z2-ato').value.trim(),
+    };
+    const r = await api('/api/hasshin/ai', { mode: 'service', data });
+    kart.service = r.sentence;
+    kart.persona_seed = data.customer;
+    kart.nayami_seed = data.nayami_word;
+    document.getElementById('z2-sentence').textContent = r.sentence + '\n\n※ ' + (r.note || '形は発信への反応を見て、あとから育てられます');
+    document.getElementById('z2-service').style.display = 'block';
+  } catch (e) { alert(e.message); }
+  busy(btn, false);
+}
+
+/* ---------- ① カルテ ---------- */
+
+const DESTS = ['体験レッスン', '公式LINE', 'お問い合わせ', '販売ページ', 'まだ決まっていない'];
+const JOBS = ['募集型（教室・レッスン）', '物販型（作家・販売）', '受注型（オーダー・撮影）'];
+
+function pillSelect(wrapId, values, selected, onpick, multi) {
+  const wrap = document.getElementById(wrapId);
+  wrap.innerHTML = '';
+  values.forEach(v => {
+    const b = document.createElement('button');
+    b.className = 'pill' + ((multi ? (selected || []).includes(v) : selected === v) ? ' on' : '');
+    b.textContent = v;
+    b.onclick = () => onpick(v, b);
+    wrap.appendChild(b);
+  });
+}
+
+function karteFill() {
+  if (kart.persona == null && kart.persona_seed) kart.persona = kart.persona_seed;
+  document.getElementById('k-persona').value = kart.persona || '';
+  document.getElementById('k-solve').value = kart.solve || '';
+  document.getElementById('k-kikkake').value = kart.kikkake || '';
+  document.getElementById('k-dest-free').value = (kart.dest && !DESTS.includes(kart.dest)) ? kart.dest : '';
+  karteFillDest(DESTS.includes(kart.dest) ? kart.dest : null);
+  pillSelect('k-jobtype', JOBS, kart.jobtype, (v) => { kart.jobtype = v; karteFillJob(v); });
+  karteFillJob(kart.jobtype);
+  renderNayamiPool();
+  renderScenes();
+}
+
+function karteFillDest(v) {
+  pillSelect('k-dest', DESTS, v, (nv) => { kart.dest = nv; document.getElementById('k-dest-free').value = ''; karteFillDest(nv); });
+}
+function karteFillJob(v) {
+  pillSelect('k-jobtype', JOBS, v, (nv) => { kart.jobtype = nv; karteFillJob(nv); });
+}
+
+function renderNayamiPool() {
+  const wrap = document.getElementById('k-nayami');
+  wrap.innerHTML = '';
+  const sel = kart.nayami_raw || [];
+  const pool = Array.from(new Set([...sel, ...nayamiPool]));
+  pool.forEach(v => {
+    const b = document.createElement('button');
+    b.className = 'pill' + (sel.includes(v) ? ' on' : '');
+    b.textContent = v;
+    b.onclick = () => {
+      let s = kart.nayami_raw || [];
+      if (s.includes(v)) s = s.filter(x => x !== v);
+      else if (s.length < 5) s = [...s, v];
+      else { alert('まずは5つまで。悩みはほかにもあって大丈夫です。発信は「よく聞く悩み」から始めるのがいちばん届きます'); return; }
+      kart.nayami_raw = s;
+      renderNayamiPool();
+      renderScenes();
+    };
+    wrap.appendChild(b);
+  });
+  document.getElementById('k-nayami-btn').textContent = pool.length ? '違う候補も見る' : 'お悩みの候補を出す';
+}
+
+function nayamiFreeAdd() {
+  const inp = document.getElementById('k-nayami-free');
+  const v = inp.value.trim();
+  if (!v) return;
+  let s = kart.nayami_raw || [];
+  if (s.includes(v)) { inp.value = ''; return; }
+  if (s.length >= 5) { alert('まずは5つまで。悩みはほかにもあって大丈夫です。発信は「よく聞く悩み」から始めるのがいちばん届きます'); return; }
+  if (!nayamiPool.includes(v)) nayamiPool.push(v);
+  kart.nayami_raw = [...s, v];
+  inp.value = '';
+  renderNayamiPool();
+  renderScenes();
+}
+
+async function nayamiSuggest() {
+  const btn = document.getElementById('k-nayami-btn');
+  kart.persona = document.getElementById('k-persona').value.trim();
+  if (!kart.persona) { alert('先に「1. あなたのお客さま」を書いてください。候補はそこから作ります'); return; }
+  busy(btn, true);
+  try {
+    const r = await api('/api/hasshin/ai', { mode: 'nayami', data: { persona: kart.persona, service: kart.service || kart.axis || '', seed: kart.nayami_seed || '', exclude: nayamiPool } });
+    nayamiPool = Array.from(new Set([...nayamiPool, ...r.options]));
+    renderNayamiPool();
+  } catch (e) { alert(e.message); }
+  busy(btn, false);
+}
+
+function renderScenes() {
+  const sel = kart.nayami_raw || [];
+  const q = document.getElementById('k-scene-q');
+  q.style.display = sel.length ? 'block' : 'none';
+  const wrap = document.getElementById('k-scenes');
+  wrap.innerHTML = '';
+  kart.scenes = kart.scenes || {};
+  sel.forEach(n => {
+    const blk = document.createElement('div');
+    blk.className = 'nblock';
+    blk.innerHTML = '<div class="nt">「' + esc(n) + '」の場面</div>';
+    const pills = document.createElement('div');
+    pills.className = 'pills col';
+    const chosen = kart.scenes[n];
+    const opts = (kart.sceneOpts && kart.sceneOpts[n]) || [];
+    if (chosen && !opts.includes(chosen)) opts.unshift(chosen);
+    opts.forEach(o => {
+      const b = document.createElement('button');
+      b.className = 'pill' + (chosen === o ? ' on' : '');
+      b.textContent = o;
+      b.onclick = () => { kart.scenes[n] = o; renderScenes(); };
+      pills.appendChild(b);
+    });
+    const more = document.createElement('button');
+    more.className = 'pill more';
+    more.textContent = opts.length ? 'どれも違う（別の候補を見る）' : '場面の候補を出す';
+    more.onclick = () => sceneSuggest(n, more);
+    pills.appendChild(more);
+    blk.appendChild(pills);
+    const free = document.createElement('input');
+    free.type = 'text';
+    free.placeholder = 'お客さまの実際の一言があれば、そのまま書くのがいちばんです';
+    free.style.marginTop = '8px';
+    free.value = (chosen && !opts.includes(chosen)) ? chosen : (chosen && opts.includes(chosen) ? '' : '');
+    free.onchange = () => { if (free.value.trim()) { kart.scenes[n] = free.value.trim(); renderScenes(); } };
+    blk.appendChild(free);
+    wrap.appendChild(blk);
+  });
+}
+
+async function sceneSuggest(n, btn) {
+  busy(btn, true, '考えています…');
+  try {
+    const exclude = (kart.sceneOpts && kart.sceneOpts[n]) || [];
+    const r = await api('/api/hasshin/ai', { mode: 'nayami_scene', data: { nayami: n, persona: kart.persona || '', service: kart.service || kart.axis || '', exclude } });
+    kart.sceneOpts = kart.sceneOpts || {};
+    kart.sceneOpts[n] = [...exclude, ...r.options];
+    renderScenes();
+  } catch (e) { alert(e.message); busy(btn, false); }
+}
+
+async function karteSave() {
+  const btn = document.getElementById('k-save');
+  kart.persona = document.getElementById('k-persona').value.trim();
+  kart.solve = document.getElementById('k-solve').value.trim();
+  kart.kikkake = document.getElementById('k-kikkake').value.trim();
+  const free = document.getElementById('k-dest-free').value.trim();
+  if (free) kart.dest = free;
+  if (!kart.persona) { alert('「1. あなたのお客さま」を書いてください'); return; }
+  if (!(kart.nayami_raw || []).length) { alert('「2. お悩み」を選んでください（候補を出すボタンから）'); return; }
+  if (!kart.solve) { alert('「3. どう解決できるか」を書いてください'); return; }
+  // 発信に使う悩み = 場面の言葉があればそれ、なければ選んだ悩みそのまま
+  kart.nayami = (kart.nayami_raw || []).map(n => (kart.scenes && kart.scenes[n]) || n);
+  delete kart.profile;  // カルテが変わったのでプロフィール文は作り直す
+  busy(btn, true, '保存しています…');
+  try {
+    await api('/api/hasshin/karte', { karte: kart });
+    ST.karte = kart;
+    await profileShow();
+  } catch (e) { alert(e.message); }
+  busy(btn, false);
+}
+
+/* ---------- ①-2 プロフィール ---------- */
+
+async function profileShow(force) {
+  go('profile');
+  const p = document.getElementById('p-text');
+  if (kart.profile && !force) { p.textContent = kart.profile; return; }
+  p.textContent = '考えています…';
+  try {
+    const r = await api('/api/hasshin/ai', { mode: 'profile', data: { karte: kart } });
+    kart.profile = (r.lines || []).join('\n');
+    p.textContent = kart.profile;
+    api('/api/hasshin/karte', { karte: kart });  // 裏で保存（次に開いても同じ文）
+  } catch (e) { p.textContent = e.message; }
+}
+
+/* ---------- ② 一言 → ③ 7本 ---------- */
+
+function renderLastWeek() {
+  const w = document.getElementById('w-last');
+  if (ST.week && ST.week.items) {
+    curTheme = ST.week.theme; curItems = ST.week.items;
+    w.innerHTML = '<div class="backline">前回「' + esc(ST.week.theme) + '」の7本 → <a onclick="renderCards();go(\'cards\')">ひらく</a></div>';
+  } else w.innerHTML = '';
+}
+
+async function netaGenerate() {
+  const theme = document.getElementById('w-theme').value.trim();
+  if (!theme) { alert('一言だけ、いま作っているものを教えてください'); return; }
+  if (!kart.dest || kart.dest === 'まだ決まっていない') { go('dest'); return; }
+  const btn = document.getElementById('w-btn');
+  busy(btn, true, '7本つくっています…（30秒ほど）');
+  try {
+    const r = await api('/api/hasshin/ai', { mode: 'neta', data: { karte: kart, theme } });
+    curItems = r.items || []; curTheme = theme;
+    api('/api/hasshin/week', { theme, items: curItems });  // 保存は裏で
+    renderCards();
+    go('cards');
+  } catch (e) { alert(e.message); }
+  busy(btn, false);
+}
+
+function renderCards() {
+  document.getElementById('head-desc').innerHTML = esc('「' + curTheme + '」から7本。上から順番に、1日1本。');
+  const list = document.getElementById('cards-list');
+  list.innerHTML = '';
+  curItems.forEach((it, i) => {
+    const d = document.createElement('div');
+    d.className = i === 0 ? 'today' : 'card';
+    let html = '';
+    if (i === 0) html += '<span class="badge">まずはこれ</span>';
+    html += '<div class="type">' + esc(it.kata + ' ' + it.kata_label) + ' <em>' + esc(it.dest) + '</em></div>';
+    html += '<p class="hook">' + esc(it.hook) + '</p>';
+    html += '<div class="row"><i>撮るもの</i>' + esc(it.shoot) + '</div>';
+    if (it.note) html += '<div class="row mut">※ ' + esc(it.note) + '</div>';
+    html += '<div style="text-align:right; margin-top:8px"><button class="copy" onclick="postMake(' + i + ', this)">投稿文をつくる →</button></div>';
+    d.innerHTML = html;
+    list.appendChild(d);
+  });
+}
+
+/* ---------- ③-2 投稿文 ---------- */
+
+async function postMake(i, btn) {
+  curItem = curItems[i];
+  busy(btn, true, 'つくっています…');
+  try {
+    const r = await api('/api/hasshin/ai', { mode: 'post', data: { karte: kart, theme: curTheme, item: curItem } });
+    curPost = r;
+    document.getElementById('post-neta').innerHTML =
+      '<div class="type">' + esc(curItem.kata + ' ' + curItem.kata_label) + ' <em>' + esc(curItem.dest) + '</em></div>' +
+      '<div class="row"><i>撮るもの</i>' + esc(curItem.shoot) + '</div>';
+    const plan = r.reel_plan || [];
+    document.getElementById('post-plan-q').style.display = plan.length ? 'block' : 'none';
+    document.getElementById('post-plan').innerHTML = plan.map((c, n) =>
+      '<div class="card" style="margin-bottom:8px">' +
+      '<div class="type">カット' + (n + 1) + ' <em>' + esc(c.sozai || '') + '</em></div>' +
+      '<div class="row"><i>映すもの</i>' + esc(c.utsusu || '') + '</div>' +
+      '<div class="row"><i>字幕</i>' + esc(c.jimaku || '') + '</div>' +
+      '</div>').join('');
+    document.getElementById('post-feed').textContent = r.feed;
+    document.getElementById('post-threads').textContent = r.threads;
+    document.getElementById('post-threads-q').style.display = 'none';
+    go('post');
+  } catch (e) { alert(e.message); }
+  busy(btn, false);
+}
+
+async function postFix(instruction, btn) {
+  busy(btn, true, '…');
+  try {
+    const r = await api('/api/hasshin/ai', { mode: 'post_fix', data: { instruction, text: document.getElementById('post-feed').textContent, karte: kart, item: curItem } });
+    document.getElementById('post-feed').textContent = r.text;
+  } catch (e) { alert(e.message); }
+  busy(btn, false);
+}
+
+function threadsToggle(btn) {
+  const q = document.getElementById('post-threads-q');
+  const show = q.style.display === 'none';
+  q.style.display = show ? 'block' : 'none';
+  btn.classList.toggle('on', show);
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const l = btn.textContent;
+    btn.textContent = 'コピーしました';
+    setTimeout(() => { btn.textContent = l; }, 1500);
+  });
+}
+
+boot();
+</script>
+</body>
+</html>

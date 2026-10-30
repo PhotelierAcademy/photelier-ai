@@ -1623,4 +1623,276 @@ async def get_all_submissions(x_teacher_key: str = Header(None)):
         print(f"❌ 全提出物取得エラー: {e}")
         return {"submissions": []}
 
+# ---- 発信ネタ出しツール（本講座の受講生だけ） ----
+# サロン会員（tier='subscription'）には出さない。
+# 期限はアプリのログイン期間そのもの（active=false でここも使えなくなる）。
+
+async def course_member_from_token(authorization: Optional[str]) -> dict:
+    member = await member_from_token(authorization)
+    if member.get("tier") != "course":
+        raise HTTPException(status_code=403, detail="こちらは本講座の受講生の方向けのツールです😊")
+    return member
+
+
+# 工程ごとの参考動画。video_library.json と同じ Vimeo ID + 限定公開ハッシュ。
+# static には置かない（ログインした本講座の受講生だけが API 経由で受け取る）。
+HASSHIN_VIDEOS = {
+    "zero": [
+        {"label": "マーケティング全体像の把握", "url": "https://vimeo.com/1143041543/bf9d8ced75"},
+        {"label": "ブランディングとマーケティングの違い", "url": "https://vimeo.com/1148047603/267cd0f902"},
+    ],
+    "zero2": [
+        {"label": "売れる市場", "url": "https://vimeo.com/1143044424/bcc22fab5b"},
+        {"label": "リサーチ・モデリング", "url": "https://vimeo.com/1143264618/4e4072e15c"},
+    ],
+    "karte": [
+        {"label": "ペルソナ設定", "url": "https://vimeo.com/1143047013/73336d5b46"},
+        {"label": "解決策", "url": "https://vimeo.com/1148009088/2327c6c67f"},
+        {"label": "コンセプト設計", "url": "https://vimeo.com/1143051495/fb61d7014e"},
+    ],
+    "profile": [
+        {"label": "インスタプロフィール", "url": "https://vimeo.com/1143054115/8eb7b641d0"},
+    ],
+    "weekly": [
+        {"label": "発信の本質", "url": "https://vimeo.com/1143270042/f0804f82f8"},
+        {"label": "発信ネタ出し・7つの型", "url": "https://vimeo.com/1143270964/28ffdc0649"},
+    ],
+    "cards": [
+        {"label": "5つの発信テンプレート", "url": "https://vimeo.com/1144392445/304544d478"},
+        {"label": "ストーリーズ投稿", "url": "https://vimeo.com/1148058561/b79a22ea00"},
+        {"label": "リール作成", "url": "https://vimeo.com/1143272914/93282708ff"},
+    ],
+    "destination": [
+        {"label": "満席を作るLINE告知文", "url": "https://vimeo.com/1144424590/fa4e4161f6"},
+        {"label": "お申し込みを頂く流れ", "url": "https://vimeo.com/1067557033/ce32fcd178"},
+    ],
+}
+
+# さちえ先生の注意事項を「仕組みで守らせる」部分。ここがツールの価値の本体。
+HASSHIN_BASE_PROMPT = """あなたはPhotelier Academyのさちえ先生の「発信ネタ出しツール」の中のAIです。
+相手はお教室の先生・ハンドメイド作家・フォトグラファーなどの受講生（ママが多い）です。
+
+全モード共通で必ず守ること:
+- やさしい敬語。煽らない（「今しかない」「早くしないと」等は禁止）
+- 期限の約束をしない（「3ヶ月で申し込みが来る」等は書かない。書くなら事実だけ「反応は貯まった本数で変わります」）
+- 商品設計・価格には触れない（受講生はレッスン・作品を既に持っている。高額化は教えない）
+- マーケティング用語を使わない（ペルソナ→お客さま、導線→行き先、CTA→ご案内 と言い換える）
+- 受講生を責めない。できていないことを指摘する言い方をしない
+"""
+
+HASSHIN_MODE_PROMPTS = {
+    # ⓪ なんのサービスにするか決める（対話）
+    "zero": HASSHIN_BASE_PROMPT + """
+今は「なんのサービスにするか決める」対話です。発信が止まるのは迷っているから。あなたの仕事は絞る手伝いです。
+
+ルール:
+- ★未来を聞かない。過去の事実だけ聞く（「何がやりたいですか」はふんわりが返るので禁止。「誰に、何て言われましたか？」は事実しか返らない）
+- 聞くことは3つだけ: ①実際に人に喜ばれたのはどれか（誰に何て言われたか） ②お金や時間をかけ続けているのはどれか ③なぜそれを始めたのか（想いの強さ）
+- 1回の返事で質問は1つだけ。短く
+- 選ばなかったものは「やめる」ではなく「後に回す」と言う（捨てられないから止まる人が多い）
+- 事実が2つ以上揃って軸が1つに絞れたら decided を true にする
+
+必ずこのJSONだけを返す:
+{"reply": "次の質問または相づち（短く）", "decided": false, "axis": "", "later": [], "summary": ""}
+decided が true のとき: axis=軸にするもの1つ、later=後に回すもの、summary=「軸は◯◯。△△は後に回す。やめなくて大丈夫です」の形の一言
+""",
+    # ⓪-2 売れる市場との掛け合わせ案
+    "market": HASSHIN_BASE_PROMPT + """
+受講生のサービスの軸を「売れる市場」5ジャンル（①ビジネス・仕事 ②お金 ③美容・健康 ④恋愛・人間関係・子育て・自己肯定感 ⑤スピリチュアル）と掛け合わせた案を3つ出します。
+受講生は「自分の経験があって、言いやすいもの」を選びます。
+
+必ずこのJSONだけを返す:
+{"options": [{"market": "市場名（例: 癒し・自己肯定感）", "idea": "掛け合わせの一言（例: 無心になれる、大人のバレエ塗り絵時間）"}, ...3つ],
+ "search_words": ["Instagramで検索する言葉を2つ"],
+ "ato_hint": "売れた跡を見る場所の一言（お仕事のタイプに合わせる: 募集型=ストアカ等/物販型=メルカリ・minne/受注型=同業の実績ページ。同じものが無ければ隣を見ればOKと添える）"}
+""",
+    # ⓪-2 出口: サービス決定の1文
+    "service": HASSHIN_BASE_PROMPT + """
+ニーズ確認の結果から「この形のサービスにする」の1文を作ります。
+形は必ず「（悩みの言葉）な（お客さま）へ、（何を・どんな形で）お届けする」。
+
+必ずこのJSONだけを返す:
+{"sentence": "1文", "note": "形は発信への反応を見て、あとから育てられます"}
+""",
+    # ① カルテ: 悩み候補（1段目・ざっくり5つ）
+    "nayami": HASSHIN_BASE_PROMPT + """
+お客さま像とサービスから、そのお客さまの悩みの候補を5つ出します。
+受講生に白紙で書かせないための候補です。exclude に入っているものと同じ・似たものは出さない。
+
+必ずこのJSONだけを返す:
+{"options": ["悩みを短い一言で", ...5つ]}
+""",
+    # ① カルテ: 悩みを場面の言葉に（2段目・3つ）
+    "nayami_scene": HASSHIN_BASE_PROMPT + """
+選ばれた悩みを「具体的な場面の言葉」に展開します（裏で100個出して良い3つだけ見せるイメージ）。
+例:「独学で自信がない」→「レシピ通りやったのに、アイシングがにじむ」。
+発信の1行目に使えるのは場面の言葉だけです。本人の口から出たような、生活の中の一場面にする。
+exclude に入っているものと同じ・似たものは出さない。
+
+必ずこのJSONだけを返す:
+{"options": ["場面の言葉", ...3つ]}
+""",
+    # ①-2 プロフィール4行
+    "profile": HASSHIN_BASE_PROMPT + """
+カルテからインスタのプロフィール文を作ります。4つの役割に固定:
+1行目=何の専門家か（コンセプト1行。解決できることから） 2行目=誰向けか 3行目=できること・実績 最後=行き先への一言（例: 体験レッスンはこちら↓）。
+全体で5〜6行まで。絵文字は1〜2個まで。
+
+必ずこのJSONだけを返す:
+{"lines": ["行", ...]}
+""",
+    # ② → ③ 7本のネタ
+    "neta": HASSHIN_BASE_PROMPT + """
+カルテと「いま作っているもの（一言テーマ）」から、1週間分=7本の発信ネタを出します。
+7つの型: ①理想の未来 ②あなたにもできる ③学びになること ④人柄 ⑤実績・つよみ ⑥ご案内 ⑦背中を押す
+
+必ず守ること（さちえ先生のルール）:
+- 7つの型を1本ずつ、全部使う（③ノウハウに寄らせない。再生数だけ伸びても申し込みにつながらないから）
+- ⑥ご案内を1本目と最後にしない。前後がご案内にならない位置（間に入れ込むと売り込み感が消える）
+- ④人柄は必ずストーリーズに振る（プライベート写真で世界観が崩れないように）
+- ⑤実績には note に「この投稿は再生数は伸びません。でも信頼のために必要な1本です」を入れる
+- 1本目（まずはこれ）の hook は、カルテの「場面の悩み」の言葉から始める（「私のことだ」になる）
+- ⑥ご案内はカルテの「解決できること」と「行き先」から作る（売り込みにならない）
+- ②あなたにもできる・⑦背中を押すは、カルテの「きっかけと変化」の実話から作る（テンプレ感が消える）
+- 撮るものは1本につき1つだけ、具体的に。★dest に合わせる: フィード/ストーリーズ=「◯◯を1枚」、リール=素材の一言＋「（くわしい構成は投稿文のときに出ます）」の形（例:「◯◯の写真3枚と手元の動画1本（くわしい構成は投稿文のときに出ます）」）。★リールでも凝った動画編集はさせない（写真と10秒以内の動画をつなげるだけで作れる範囲）
+- dest はフィード/リール/ストーリーズのどれか。リールは1〜2本まで（ハードルを上げない）
+
+必ずこのJSONだけを返す:
+{"items": [{"kata": "③", "kata_label": "学びになること", "dest": "リール",
+  "hook": "1行目になる言葉", "shoot": "撮るもの1つ", "note": ""}, ...7つ、出す順番で]}
+""",
+    # ③-2 投稿文（フィード＋スレッズ）
+    "post": HASSHIN_BASE_PROMPT + """
+1つのネタから、そのまま貼れる投稿文を作ります。
+★ネタの dest（フィード/リール/ストーリーズ）に合わせること:
+- dest がリール → feed はリールのキャプションとして書く。1行目は悩みの言葉から（「動画を見てくれてありがとう」のような前置きは書かない）。さらに reel_plan（リールの構成案）を必ず出す
+- dest がストーリーズ → feed は2〜3行の話しかける形。reel_plan は空の配列
+- dest がフィード → 下のフィード版の形。reel_plan は空の配列
+
+reel_plan（リールの構成案）のルール:
+- カット3〜5個。「こういう写真や動画を撮って、この順でつなげる」が一目で分かるように
+- 各カット = sozai（「写真」か「動画◯秒」）+ utsusu（映すもの。具体的に、撮りやすいもの）+ jimaku（画面に乗せる字幕1行）
+- 動画は10秒以内の「スマホを置いて回すだけ」で撮れるものだけ。編集の腕がいるカットは出さない。写真だけの構成でもよい
+- カット1の字幕は悩みの言葉（手が止まる1行）。最後のカットの字幕は行き先への一言
+- ★字幕に読点「、」を使わない（テロップの字面が崩れるため。区切りたいときは文を分ける）
+- 字幕は1行15文字以内くらい。短く
+
+フィード版:
+- 1行目=悩みの言葉から（ネタの hook をほぼそのまま）
+- 本文=カルテの「解決できること」「きっかけと変化」から。ノウハウの羅列にしない
+- 最後にご案内を1行だけ（例: 体験レッスンはプロフィールのリンクから↓）。押し売りしない
+- 8〜12行くらい。絵文字は控えめ
+
+スレッズ版:
+- ★敬語のまま（タメ口にしない）。短く・本音寄りに（「〜からなんです」「〜なんですよね」）
+- 3〜4行。写真なしでも出せる文にする
+- ★強い断定・逆張り・煽りは禁止。「静かな本音」まで（反論ではなく「わかる」で返したくなる線。バズは狙わない）
+
+必ずこのJSONだけを返す:
+{"feed": "フィード投稿文（改行入り）", "threads": "スレッズ投稿文（改行入り）",
+ "reel_plan": [{"sozai": "写真 または 動画◯秒", "utsusu": "映すもの", "jimaku": "字幕1行（読点なし）"}, ...リール以外は空の配列]}
+""",
+    # ③-2 直しボタン
+    "post_fix": HASSHIN_BASE_PROMPT + """
+投稿文の直しです。instruction に従って text を直します。
+- 「もう少し短く」= 半分くらいに。1行目とご案内は残す
+- 「ストーリーズ用にする」= 2〜3行。話しかける形に
+- 「書き直す」= 同じネタ・同じカルテで別の切り口に
+敬語のまま。煽らない。
+
+必ずこのJSONだけを返す:
+{"text": "直した文（改行入り）"}
+""",
+}
+
+
+class HasshinKarteRequest(BaseModel):
+    karte: dict
+
+
+class HasshinAiRequest(BaseModel):
+    mode: str
+    data: dict
+
+
+class HasshinWeekRequest(BaseModel):
+    theme: str
+    items: list
+
+
+@app.get("/hasshin")
+async def hasshin_page():
+    return FileResponse("static/hasshin.html")
+
+
+@app.get("/api/hasshin/state")
+async def hasshin_state(authorization: str = Header(None)):
+    member = await course_member_from_token(authorization)
+    email = member["email"].strip().lower()
+    karte = None
+    week = None
+    try:
+        r = supabase.table("hasshin_karte").select("karte").eq("email", email).execute()
+        if r.data:
+            karte = r.data[0]["karte"]
+        w = supabase.table("hasshin_weeks").select("theme, items, created_at").eq("email", email) \
+            .order("created_at", desc=True).limit(1).execute()
+        if w.data:
+            week = w.data[0]
+    except Exception as e:
+        print(f"❌ 発信ツール読み込みエラー: {e}")
+    return {"name": member["name"], "karte": karte, "week": week, "videos": HASSHIN_VIDEOS}
+
+
+@app.post("/api/hasshin/karte")
+async def hasshin_save_karte(request: HasshinKarteRequest, authorization: str = Header(None)):
+    member = await course_member_from_token(authorization)
+    try:
+        supabase.table("hasshin_karte").upsert({
+            "email": member["email"].strip().lower(),
+            "karte": request.karte,
+            "updated_at": datetime.now().isoformat(),
+        }).execute()
+    except Exception as e:
+        print(f"❌ カルテ保存エラー: {e}")
+        raise HTTPException(status_code=500, detail="保存できませんでした。少し待ってからもう一度お試しください")
+    return {"status": "ok"}
+
+
+@app.post("/api/hasshin/week")
+async def hasshin_save_week(request: HasshinWeekRequest, authorization: str = Header(None)):
+    member = await course_member_from_token(authorization)
+    try:
+        supabase.table("hasshin_weeks").insert({
+            "email": member["email"].strip().lower(),
+            "theme": request.theme,
+            "items": request.items,
+        }).execute()
+    except Exception as e:
+        print(f"❌ 週ネタ保存エラー: {e}")
+    return {"status": "ok"}
+
+
+@app.post("/api/hasshin/ai")
+async def hasshin_ai(request: HasshinAiRequest, authorization: str = Header(None)):
+    await course_member_from_token(authorization)
+    prompt = HASSHIN_MODE_PROMPTS.get(request.mode)
+    if not prompt:
+        raise HTTPException(status_code=400, detail="不明なモードです")
+    try:
+        res = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            max_tokens=2048,
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": json.dumps(request.data, ensure_ascii=False)},
+            ],
+        )
+        return json.loads(res.choices[0].message.content)
+    except Exception as e:
+        print(f"❌ 発信ツール生成エラー: {e}")
+        raise HTTPException(status_code=500, detail="うまく作れませんでした。もう一度お試しください")
+
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
