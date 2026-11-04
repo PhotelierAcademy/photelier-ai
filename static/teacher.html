@@ -467,6 +467,97 @@
     }
     .sub-card-img:hover { opacity: 0.85; }
 
+    /* 写真の提出（全員ぶん・新しい順） */
+    #ph-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 16px;
+    }
+    .ph-card {
+      background: #fff;
+      border: 1px solid #e3ebef;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: box-shadow .18s, transform .18s;
+    }
+    .ph-card:hover { box-shadow: 0 6px 20px rgba(61,85,100,.14); transform: translateY(-2px); }
+    .ph-card-thumb {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      display: block;
+      background: #f2f6f8;
+    }
+    .ph-card-body { padding: 10px 12px 12px; }
+    .ph-card-name { font-weight: 700; color: #3D5564; font-size: 14px; }
+    .ph-card-date { font-size: 11px; color: #8aa0ad; margin-top: 2px; }
+    .ph-card-content {
+      font-size: 12px; color: #5a7180; margin-top: 6px; line-height: 1.6;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .ph-done {
+      display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700;
+      color: #2f7d5a; background: #e4f5ec; border-radius: 999px; padding: 2px 8px;
+    }
+    .ph-group {
+      margin-left: 6px; font-size: 10.5px; font-weight: 600; color: #5d8fa3;
+      background: #eef4f8; border-radius: 999px; padding: 2px 7px; vertical-align: 2px;
+    }
+    #ph-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+    .ph-tab {
+      font-size: 13px; color: #5a7180; background: #fff; border: 1px solid #d6e3ea;
+      border-radius: 999px; padding: 5px 14px; cursor: pointer; user-select: none;
+    }
+    .ph-tab:hover { background: #f2f7fa; }
+    .ph-tab.on { background: #6B9BB5; border-color: #6B9BB5; color: #fff; font-weight: 700; }
+
+    /* 写真の上に線を描く画面 */
+    #tensaku-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(30,44,54,.88); z-index: 1000;
+      align-items: center; justify-content: center; padding: 16px;
+    }
+    #tensaku-modal.open { display: flex; }
+    #tensaku-box {
+      background: #fff; border-radius: 14px; width: min(1000px, 96vw);
+      max-height: 94vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+    #tensaku-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 1px solid #e3ebef;
+    }
+    #tensaku-title { font-weight: 700; color: #3D5564; }
+    #tensaku-close {
+      border: none; background: none; font-size: 20px; cursor: pointer; color: #8aa0ad;
+    }
+    #tensaku-stage {
+      flex: 1; overflow: auto; background: #eef3f6; padding: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #tensaku-canvas {
+      max-width: 100%; max-height: 68vh; touch-action: none;
+      cursor: crosshair; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,.12);
+    }
+    #tensaku-tools {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      padding: 12px 16px; border-top: 1px solid #e3ebef;
+    }
+    .tk-color {
+      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+      border: 2px solid #fff; box-shadow: 0 0 0 1px #cfdbe3;
+    }
+    .tk-color.on { box-shadow: 0 0 0 3px #6B9BB5; }
+    .tk-btn {
+      border: 1px solid #cfdbe3; background: #fff; color: #3D5564;
+      border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer;
+    }
+    .tk-btn:hover { background: #f4f8fa; }
+    .tk-btn--save {
+      background: #6B9BB5; color: #fff; border-color: #6B9BB5; font-weight: 700;
+    }
+    .tk-sep { flex: 1; }
+
     /* 画像拡大ライトボックス */
     #img-lightbox {
       display: none;
@@ -621,6 +712,11 @@
       <label>メールアドレス<input type="email" id="mem-email" placeholder="eri@example.com"></label>
       <label>最初のパスワード<input type="text" id="mem-pass" placeholder="8文字以上"></label>
       <label>サポートの終わる日<input type="date" id="mem-end"></label>
+      <label>どの方ですか？<select id="mem-alumni">
+        <option value="">本講座の受講中の方</option>
+        <option value="alumni">卒業生サロンの方（アーカイブが全部見られます）</option>
+        <option value="continuing">継続コースの方（水曜＋卒業生サロン 両方）</option>
+      </select></label>
       <button class="qa-add" id="mem-add-btn" onclick="addMember()">この受講生を作る</button>
     </div>
     <div id="mem-list"><div class="loading">読み込み中...</div></div>
@@ -662,6 +758,30 @@
     <div id="qa-list"><div class="loading">読み込み中...</div></div>
   </div>
 
+  <h1 style="margin-top:44px;">卒業生サロン アーカイブ 🎓</h1>
+  <p class="subtitle">月初金曜のライブ添削の録画です。卒業生サロンの方は全部、受講中の方は最新の1回だけ見られます。Photelierサロンの会員さんには出ません😊</p>
+  <div class="qa-panel">
+    <div class="qa-form">
+      <label>開催日<input type="date" id="al-date"></label>
+      <label>タイトル<input type="text" id="al-title" placeholder="2026年10月の卒業生サロン"></label>
+      <label>VimeoのID<input type="text" id="al-vimeo" placeholder="123456789"></label>
+      <label>限定公開のハッシュ<input type="text" id="al-hash" placeholder="なければ空でOK"></label>
+      <label class="wide">メモ（動画の下に出ます）<input type="text" id="al-note" placeholder="この回で添削した内容 など"></label>
+      <button class="qa-add" id="al-add-btn" onclick="addAlumni()">この回を追加する</button>
+    </div>
+    <div id="al-list"><div class="loading">読み込み中...</div></div>
+  </div>
+
+  <h1 style="margin-top:44px;">写真の提出 📷</h1>
+  <p class="subtitle">届いた写真が新しい順に並びます。写真をクリックすると、その上に線が描けます😊</p>
+  <div id="ph-tabs">
+    <span class="ph-tab on" data-group="すべて" onclick="phSetGroup(this,'すべて')">すべて</span>
+    <span class="ph-tab" data-group="本講座" onclick="phSetGroup(this,'本講座')">本講座</span>
+    <span class="ph-tab" data-group="卒業生サロン" onclick="phSetGroup(this,'卒業生サロン')">卒業生サロン</span>
+  </div>
+  <button class="reload-all-btn" onclick="loadPhotoSubmissions()">🔄 新しい提出を読み込む</button>
+  <div id="ph-list"><div class="loading">読み込み中...</div></div>
+
   <h1 style="margin-top:44px;">受講生の相談まとめ 📋</h1>
   <p class="subtitle">個別コンサル前に確認してね。各カードをクリックすると詳細が見られるよ😊</p>
 
@@ -669,6 +789,31 @@
 
   <div class="student-grid" id="student-grid">
     <div class="loading">読み込み中...</div>
+  </div>
+</div>
+
+<!-- 写真の添削（写真の上に線を描く） -->
+<div id="tensaku-modal" onclick="closeTensaku()">
+  <div id="tensaku-box" onclick="event.stopPropagation()">
+    <div id="tensaku-header">
+      <div id="tensaku-title">写真の添削</div>
+      <button id="tensaku-close" onclick="closeTensaku()">✕</button>
+    </div>
+    <div id="tensaku-stage"><canvas id="tensaku-canvas"></canvas></div>
+    <div id="tensaku-tools">
+      <span class="tk-color on" style="background:#ffffff" onclick="tkColor(this,'#ffffff')"></span>
+      <span class="tk-color" style="background:#e4572e" onclick="tkColor(this,'#e4572e')"></span>
+      <span class="tk-color" style="background:#3D5564" onclick="tkColor(this,'#3D5564')"></span>
+      <span class="tk-color" style="background:#6B9BB5" onclick="tkColor(this,'#6B9BB5')"></span>
+      <input type="range" id="tk-width" min="2" max="24" value="7" style="width:90px"
+             oninput="tkState.width = Number(this.value)">
+      <button class="tk-btn" onclick="tkUndo()">↩︎ ひとつ戻す</button>
+      <button class="tk-btn" onclick="tkClear()">🗑 ぜんぶ消す</button>
+      <span class="tk-sep"></span>
+      <button class="tk-btn" onclick="tkDownload('before')">⬇︎ 元の写真</button>
+      <button class="tk-btn" onclick="tkDownload('after')">⬇︎ 添削後</button>
+      <button class="tk-btn tk-btn--save" id="tk-save" onclick="tkSave()">保存する</button>
+    </div>
   </div>
 </div>
 
@@ -1012,6 +1157,221 @@
     document.getElementById('sub-modal').classList.remove('open');
   }
 
+  // ---- 写真の提出（全員ぶん・新しい順） ----
+  // 水曜のリアルセミナーで、上から順にまとめて見ていくための一覧。
+  // 写真そのものは一覧APIに入れていない（重すぎるため）ので、並べたあとに1枚ずつ取りに行く。
+
+  // 本講座の方と卒業生サロンの方は提出のタイミングが混ざるので、別々に見られるようにする
+  // （2026-11-04 本人）。ここで選んだものだけを並べる。
+  let phGroup = 'すべて';
+  let phAll = [];
+
+  function phSetGroup(el, group) {
+    phGroup = group;
+    document.querySelectorAll('.ph-tab').forEach(t => t.classList.remove('on'));
+    el.classList.add('on');
+    phRender();
+  }
+
+  async function loadPhotoSubmissions() {
+    const box = document.getElementById('ph-list');
+    box.innerHTML = '<div class="loading">読み込み中...</div>';
+    try {
+      const res = checkAuth(await fetch('/api/all-submissions', { headers: tHeaders() }));
+      const data = await res.json();
+      phAll = (data.submissions || []);
+      phRender();
+    } catch {
+      box.innerHTML = '<div class="loading">読み込めませんでした</div>';
+    }
+  }
+
+  async function phRender() {
+    const box = document.getElementById('ph-list');
+    const subs = phGroup === 'すべて' ? phAll : phAll.filter(s => (s.group || '本講座') === phGroup);
+    // タブに件数を出す（どこに何件あるか、開く前に分かるように）
+    document.querySelectorAll('.ph-tab').forEach(t => {
+      const g = t.dataset.group;
+      const n = g === 'すべて' ? phAll.length : phAll.filter(s => (s.group || '本講座') === g).length;
+      t.textContent = `${g}（${n}）`;
+    });
+    if (!subs.length) {
+      box.innerHTML = '<div class="loading">📭 まだ写真の提出はありません</div>';
+      return;
+    }
+    {
+      box.innerHTML = '';
+      for (const s of subs) {
+        const dateStr = s.submitted_at
+          ? new Date(s.submitted_at).toLocaleString('ja-JP',
+              { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
+          : '';
+        const card = document.createElement('div');
+        card.className = 'ph-card';
+        card.onclick = () => openTensaku(s.id, s.student_name);
+        card.innerHTML = `
+          <img class="ph-card-thumb" id="ph-thumb-${s.id}" alt="">
+          <div class="ph-card-body">
+            <div class="ph-card-name">${escapeHtml(s.student_name || '')}<span class="ph-group">${escapeHtml(s.group || '本講座')}</span></div>
+            <div class="ph-card-date">${dateStr}</div>
+            ${s.content ? `<div class="ph-card-content">${escapeHtml(s.content)}</div>` : ''}
+            ${s.annotated_at ? '<span class="ph-done">添削ずみ</span>' : ''}
+          </div>`;
+        box.appendChild(card);
+      }
+      // 写真は1枚ずつ、並び順に取りに行く（一度に全部取ると画面が固まるため）
+      for (const s of subs) {
+        const one = await phFetchOne(s.id);
+        const img = document.getElementById(`ph-thumb-${s.id}`);
+        if (!img) continue;
+        const b64 = one && (one.annotated_image || one.image_data);
+        if (b64) img.src = 'data:image/jpeg;base64,' + b64;
+      }
+    }
+  }
+
+  const phCache = {};
+  async function phFetchOne(id) {
+    if (phCache[id]) return phCache[id];
+    try {
+      const res = await fetch('/api/submission/' + id, { headers: tHeaders() });
+      if (!res.ok) return null;
+      phCache[id] = await res.json();
+      return phCache[id];
+    } catch { return null; }
+  }
+
+  // ---- 写真の上に線を描く ----
+  // ★ 写真より一回り大きいキャンバスにする（2026-08-20 本人指示）。
+  //   「もっと引きで撮って」を、写真の外側に四角を1つ描くだけで伝えられるようにするため。
+  // ★ 元の写真は上書きしない。線を描いたものは別に保存する（ビフォーアフターの2枚が残る）。
+
+  const tkState = { color: '#ffffff', width: 7, strokes: [], img: null, id: null, name: '' };
+
+  async function openTensaku(id, name) {
+    tkState.id = id; tkState.name = name || ''; tkState.strokes = [];
+    // 「えりさん」のようにすでに さん が付いているお名前に、さん を重ねない
+    const yobi = /(さん|ちゃん|先生|様)$/.test(name || '') ? name : `${name}さん`;
+    document.getElementById('tensaku-title').textContent = `${yobi}の写真`;
+    document.getElementById('tensaku-modal').classList.add('open');
+    const one = await phFetchOne(id);
+    if (!one || !one.image_data) { alert('写真が読み込めませんでした'); return; }
+    // ★ 一度添削したものを開き直したときは、描いた線が残った状態で開く（続きから描ける）。
+    //   添削後の画像には余白がもう入っているので、そのときは余白を足さない。
+    const done = !!one.annotated_image;
+    const img = new Image();
+    img.onload = () => {
+      tkState.img = img;
+      const canvas = document.getElementById('tensaku-canvas');
+      // 長辺2000pxに収める（投稿に使うには十分で、保存も軽くなる）
+      const long = Math.max(img.width, img.height);
+      const scale = long > 2000 ? 2000 / long : 1;
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      tkState.pad = done ? 0 : Math.round(Math.min(w, h) * 0.12);   // 写真の外の余白
+      tkState.w = w; tkState.h = h;
+      canvas.width = w + tkState.pad * 2;
+      canvas.height = h + tkState.pad * 2;
+      tkRedraw();
+    };
+    img.src = 'data:image/jpeg;base64,' + (one.annotated_image || one.image_data);
+  }
+
+  function tkRedraw() {
+    const canvas = document.getElementById('tensaku-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#dfe7ec';                       // 写真の外側（うっすらグレー）
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (tkState.img) ctx.drawImage(tkState.img, tkState.pad, tkState.pad, tkState.w, tkState.h);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const st of tkState.strokes) {
+      ctx.strokeStyle = st.color; ctx.lineWidth = st.width;
+      ctx.beginPath();
+      st.points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+      ctx.stroke();
+    }
+  }
+
+  function tkPoint(e) {
+    const canvas = document.getElementById('tensaku-canvas');
+    const r = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - r.left) * (canvas.width / r.width),
+      y: (e.clientY - r.top) * (canvas.height / r.height)
+    };
+  }
+
+  (function tkBindCanvas() {
+    const canvas = document.getElementById('tensaku-canvas');
+    if (!canvas) return;
+    let drawing = false;
+    canvas.addEventListener('pointerdown', e => {
+      drawing = true;
+      canvas.setPointerCapture(e.pointerId);
+      tkState.strokes.push({ color: tkState.color, width: tkState.width, points: [tkPoint(e)] });
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (!drawing) return;
+      tkState.strokes[tkState.strokes.length - 1].points.push(tkPoint(e));
+      tkRedraw();
+    });
+    const stop = () => { drawing = false; };
+    canvas.addEventListener('pointerup', stop);
+    canvas.addEventListener('pointercancel', stop);
+  })();
+
+  function tkColor(el, color) {
+    tkState.color = color;
+    document.querySelectorAll('.tk-color').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
+  }
+  function tkUndo() { tkState.strokes.pop(); tkRedraw(); }
+  function tkClear() { tkState.strokes = []; tkRedraw(); }
+
+  function tkDownload(which) {
+    const safe = (tkState.name || 'photo').replace(/[\\/:*?"<>|\s]/g, '_');
+    const a = document.createElement('a');
+    if (which === 'before') {
+      const one = phCache[tkState.id];
+      if (!one || !one.image_data) return;
+      a.href = 'data:image/jpeg;base64,' + one.image_data;
+      a.download = `${safe}_元の写真.jpg`;
+    } else {
+      a.href = document.getElementById('tensaku-canvas').toDataURL('image/jpeg', 0.92);
+      a.download = `${safe}_添削後.jpg`;
+    }
+    a.click();
+  }
+
+  async function tkSave() {
+    const btn = document.getElementById('tk-save');
+    btn.disabled = true; btn.textContent = '保存中...';
+    try {
+      const b64 = document.getElementById('tensaku-canvas')
+        .toDataURL('image/jpeg', 0.92).split(',')[1];
+      const res = await fetch(`/api/submissions/${tkState.id}/annotate`, {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, tHeaders()),
+        body: JSON.stringify({ image: b64 })
+      });
+      if (!res.ok) throw new Error((await res.json()).detail || '保存できませんでした');
+      if (phCache[tkState.id]) {
+        phCache[tkState.id].annotated_image = b64;
+        phCache[tkState.id].annotated_at = new Date().toISOString();
+      }
+      const thumb = document.getElementById(`ph-thumb-${tkState.id}`);
+      if (thumb) thumb.src = 'data:image/jpeg;base64,' + b64;
+      btn.textContent = '保存しました ✓';
+      setTimeout(() => { closeTensaku(); btn.textContent = '保存する'; btn.disabled = false; }, 900);
+    } catch (e) {
+      alert(e.message || '保存できませんでした');
+      btn.textContent = '保存する'; btn.disabled = false;
+    }
+  }
+
+  function closeTensaku() {
+    document.getElementById('tensaku-modal').classList.remove('open');
+  }
+
   // ---- 質問会にいただいた質問 ----
   // 回ごとにまとめて、まだ答えていないものを上に出す。
 
@@ -1131,6 +1491,72 @@
     loadQa();
   }
 
+  // ---- 卒業生サロン アーカイブ ----
+  async function loadAlumni() {
+    const box = document.getElementById('al-list');
+    try {
+      const res = await fetch('/api/alumni-sessions', { headers: tHeaders() });
+      const data = await res.json();
+      const sessions = data.sessions || [];
+      if (data.ready === false) {
+        box.innerHTML = '<div class="no-data">準備がもう一歩です。Supabase の SQL Editor で <code>schema_alumni.sql</code> を実行してください。</div>';
+        return;
+      }
+      if (sessions.length === 0) {
+        box.innerHTML = '<div class="no-data">まだ1回もありません。過去の回はリストを渡してくれたら一括で入れられます😊</div>';
+        return;
+      }
+      box.innerHTML = sessions.map(s => `
+        <div class="qa-row">
+          <span class="qa-row__date">${s.held_on}</span>
+          <span class="qa-row__title">${s.title}${s.note ? ` <span class="qa-row__note">${s.note}</span>` : ''}</span>
+          <button class="qa-row__del" onclick="deleteAlumni(${s.id}, '${s.title.replace(/'/g, "\\'")}')">削除</button>
+        </div>`).join('');
+    } catch (e) {
+      box.innerHTML = '<div class="no-data">読み込めませんでした</div>';
+    }
+  }
+
+  async function addAlumni() {
+    const btn = document.getElementById('al-add-btn');
+    const held_on = document.getElementById('al-date').value;
+    const title = document.getElementById('al-title').value.trim();
+    const vimeo_id = document.getElementById('al-vimeo').value.trim();
+    if (!held_on || !title || !vimeo_id) {
+      alert('開催日・タイトル・VimeoのID の3つは必要です');
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const res = checkAuth(await fetch('/api/alumni-sessions', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, tHeaders()),
+        body: JSON.stringify({
+          held_on, title, vimeo_id,
+          vimeo_h: document.getElementById('al-hash').value.trim(),
+          note: document.getElementById('al-note').value.trim()
+        })
+      }));
+      if (!res.ok) {
+        alert((await res.json()).detail || '追加できませんでした');
+        return;
+      }
+      ['al-date', 'al-title', 'al-vimeo', 'al-hash', 'al-note'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      loadAlumni();
+    } catch (e) {
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteAlumni(id, title) {
+    if (!confirm(`「${title}」を消します。よろしいですか？`)) return;
+    checkAuth(await fetch('/api/alumni-sessions/' + id, { method: 'DELETE', headers: tHeaders() }));
+    loadAlumni();
+  }
+
   // ---- サロンのお知らせ ----
   function annEscape(s) {
     return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -1211,17 +1637,27 @@
         return;
       }
       box.innerHTML = list.map(m => {
-        const kind = m.tier === 'course' ? '本講座' : 'サロン';
+        const now = m.continuing ? 'continuing' : (m.alumni ? 'alumni' : '');
+        const kind = m.tier === 'course'
+          ? (m.continuing ? '継続コース' : (m.alumni ? '卒業生' : '本講座')) : 'サロン';
         const state = m.active ? '在籍中' : '退会';
         const end = m.support_end ? `／${m.support_end}まで` : '';
         // みんなの部屋のお名前。退会された方を部屋から外すときに、これで探す
         const room = m.openchat_name
           ? `<br>🏠 みんなの部屋：${annEscape(m.openchat_name)}` : '';
+        // 本講座の方は、あとから「卒業生」「継続コース」に変えられる
+        const pick = m.tier === 'course' ? `
+          <br><select onchange="setMemberKind('${m.id}', this.value)"
+                      style="margin-top:.4rem;font-size:.8rem;max-width:100%;">
+            <option value=""${now === '' ? ' selected' : ''}>本講座</option>
+            <option value="alumni"${now === 'alumni' ? ' selected' : ''}>卒業生サロン</option>
+            <option value="continuing"${now === 'continuing' ? ' selected' : ''}>継続コース</option>
+          </select>` : '';
         return `
         <div class="qa-row" style="align-items:flex-start;${m.active ? '' : 'opacity:.5;'}">
           <span class="qa-row__date">${kind}</span>
           <span class="qa-row__title">${annEscape(m.name || '')}
-            <span class="qa-row__body-sm">${annEscape(m.email)}／${state}${end}${room}</span></span>
+            <span class="qa-row__body-sm">${annEscape(m.email)}／${state}${end}${room}</span>${pick}</span>
           <button class="qa-row__del" onclick="toggleMember('${m.id}', ${m.active ? 'false' : 'true'}, '${annEscape(m.name || '')}')">
             ${m.active ? '退会にする' : '戻す'}</button>
         </div>`;
@@ -1237,6 +1673,7 @@
     const email = document.getElementById('mem-email').value.trim();
     const password = document.getElementById('mem-pass').value;
     const support_end = document.getElementById('mem-end').value;
+    const kind = document.getElementById('mem-alumni').value;
     if (!name || !email || !password) {
       alert('お名前・メールアドレス・最初のパスワード の3つは必要です');
       return;
@@ -1246,14 +1683,16 @@
       const res = checkAuth(await fetch('/api/members', {
         method: 'POST',
         headers: Object.assign({ 'Content-Type': 'application/json' }, tHeaders()),
-        body: JSON.stringify({ name, email, password, support_end: support_end || null })
+        body: JSON.stringify({ name, email, password, support_end: support_end || null,
+                               alumni: kind === 'alumni',
+                               continuing: kind === 'continuing' })
       }));
       if (!res.ok) {
         alert((await res.json()).detail || '作れませんでした');
         return;
       }
       alert(`${name}さんを作りました。\n\nメールアドレス：${email}\nパスワード：${password}\n\nこの2つをご本人にお伝えしてください😊`);
-      ['mem-name', 'mem-email', 'mem-pass', 'mem-end'].forEach(id => {
+      ['mem-name', 'mem-email', 'mem-pass', 'mem-end', 'mem-alumni'].forEach(id => {
         document.getElementById(id).value = '';
       });
       loadMembers();
@@ -1276,8 +1715,23 @@
     loadMembers();
   }
 
+  // 本講座 → 卒業生サロン／継続コース の切り替え
+  // 継続コースは「水曜のリアルセミナー＋卒業生サロン」の両方が見られる方
+  async function setMemberKind(id, kind) {
+    const res = checkAuth(await fetch('/api/members/' + id, {
+      method: 'PATCH',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, tHeaders()),
+      body: JSON.stringify({
+        alumni: kind === 'alumni' || kind === 'continuing',
+        continuing: kind === 'continuing'
+      })
+    }));
+    if (!res.ok) alert((await res.json()).detail || '変えられませんでした');
+    loadMembers();
+  }
+
   // 初回読み込み
-  (async () => { loadSalonStats(); loadMembers(); loadAnn(); loadQuestions(); loadQa(); await loadVideoLib(); loadAllStudents(); })();
+  (async () => { loadSalonStats(); loadMembers(); loadAnn(); loadQuestions(); loadQa(); loadAlumni(); loadPhotoSubmissions(); await loadVideoLib(); loadAllStudents(); })();
 </script>
 <!-- 画像拡大ライトボックス -->
 <div id="img-lightbox" onclick="closeLightbox()">

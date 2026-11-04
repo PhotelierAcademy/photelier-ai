@@ -385,6 +385,8 @@ def member_public(member: dict) -> dict:
         "full_unlock": member.get("full_unlock", False),
         "subscription_started_at": member.get("subscription_started_at"),
         "support_end": member.get("support_end"),
+        "alumni": member.get("alumni", False),
+        "continuing": member.get("continuing", False),
     }
 
 
@@ -575,21 +577,29 @@ def video_is_open(v: dict, c: dict, tier: str, unlocked: int) -> bool:
     return (c.get("month") or 0) <= unlocked
 
 
+def hides_seminar(member: dict) -> bool:
+    """水曜のリアルセミナーを画面から隠す方か。
+    隠すのは卒業生だけ（2026-10-30 本人指示）。
+    ★ 継続コースの方は卒業生サロンにも参加できる＝alumni を立てるが、
+      水曜にも出ていらっしゃるので隠さない（2026-11-04 本人指示）。"""
+    return bool(member.get("alumni")) and not bool(member.get("continuing"))
+
+
 async def viewer_scope(authorization: Optional[str], x_teacher_key: Optional[str],
                        student_name: Optional[str]) -> tuple:
-    """動画を見ていい人かを確かめて、(tier, 開放月) を返す。
+    """動画を見ていい人かを確かめて、(tier, 開放月, 水曜セミナーを隠すか) を返す。
     さちえ先生 → 全部 / 会員 → トークンで判定 / 既存6名 → お名前＋合言葉で。
     どれでもなければ 401。"""
     if is_teacher(x_teacher_key):
-        return "course", 999
+        return "course", 999, False
     legacy_pass = legacy_pass_from_auth(authorization)
     if legacy_pass is not None:
         if is_legacy_ok(student_name, legacy_pass):
-            return "course", 999
+            return "course", 999, False
         raise HTTPException(status_code=401, detail="合言葉が必要です")
     if authorization:
         member = await member_from_token(authorization)
-        return member["tier"], unlocked_month(member)
+        return member["tier"], unlocked_month(member), hides_seminar(member)
     raise HTTPException(status_code=401, detail="ログインが必要です")
 
 
@@ -597,8 +607,13 @@ async def viewer_scope(authorization: Optional[str], x_teacher_key: Optional[str
 async def library(authorization: str = Header(None),
                   x_teacher_key: str = Header(None),
                   student_name: str = None):
-    tier, unlocked = await viewer_scope(authorization, x_teacher_key, student_name)
+    tier, unlocked, hide_seminar = await viewer_scope(authorization, x_teacher_key, student_name)
     data = json.loads(LIBRARY_PATH.read_text(encoding="utf-8"))
+    # リアルセミナー（毎週水曜）は受講中の方の場。卒業生には出さない（2026-10-30 本人指示）。
+    # 卒業生サロンのアーカイブが代わりにある。継続コースの方には出す。
+    if hide_seminar:
+        data["categories"] = [c for c in data.get("categories", [])
+                              if c.get("slug") != "seminar"]
     for c in data.get("categories", []):
         for v in c.get("videos", []):
             # リアルセミナーは、本講座の方には完全版、それ以外にはカット版を見ていただく。
@@ -775,6 +790,8 @@ class NewCourseMember(BaseModel):
     name: str
     password: str
     support_end: Optional[str] = None   # サポートの終わる日（空でもよい）
+    alumni: Optional[bool] = False      # 卒業生サロンの方は true（アーカイブが全部見られる）
+    continuing: Optional[bool] = False  # 継続コースの方は true（alumni と両方立てる。水曜も出る）
 
 
 @app.get("/api/members")
@@ -782,13 +799,16 @@ async def list_members(x_teacher_key: str = Header(None)):
     """会員さんの一覧。ここで退会の切り替えもする。"""
     require_teacher(x_teacher_key)
     cols = "id,email,name,tier,active,full_unlock,support_end,subscription_started_at,created_at"
-    try:
-        rows = supabase.table("members").select(
-            cols + ",openchat_name").order("created_at", desc=True).execute().data or []
-    except Exception:
-        # まだ schema_openchat.sql を実行していないとき。先生ページを止めない。
-        rows = supabase.table("members").select(
-            cols).order("created_at", desc=True).execute().data or []
+    # openchat_name / alumni / continuing は、それぞれの schema SQL をまだ実行していないと列が無い。
+    # どの段階でも先生ページを止めないよう、無い列を落としながら読む。
+    for extra in (",openchat_name,alumni,continuing", ",openchat_name,alumni",
+                  ",openchat_name", ",alumni", ""):
+        try:
+            rows = supabase.table("members").select(
+                cols + extra).order("created_at", desc=True).execute().data or []
+            break
+        except Exception:
+            continue
     return {"members": rows}
 
 
@@ -819,31 +839,62 @@ async def create_course_member(request: NewCourseMember, x_teacher_key: str = He
             raise HTTPException(status_code=409, detail="このメールアドレスはすでにお使いです")
         raise HTTPException(status_code=500, detail="作成できませんでした")
 
+    row = {
+        "id": created.json()["id"],
+        "email": email,
+        "name": name,
+        "tier": "course",
+        "support_end": request.support_end or None,
+        # 継続コースの方は卒業生サロンにも参加できるので、alumni も一緒に立てる
+        "alumni": bool(request.alumni) or bool(request.continuing),
+        "continuing": bool(request.continuing),
+    }
     try:
-        supabase.table("members").insert({
-            "id": created.json()["id"],
-            "email": email,
-            "name": name,
-            "tier": "course",
-            "support_end": request.support_end or None,
-        }).execute()
-    except Exception as e:
-        print(f"❌ 受講生の行が作れませんでした ({email}): {e}")
-        raise HTTPException(status_code=500, detail="最後のところで止まりました。もう一度お試しください")
+        supabase.table("members").insert(row).execute()
+    except Exception:
+        # continuing 列をまだ作っていないとき（schema_alumni.sql 未実行）でも作れるように
+        row.pop("continuing", None)
+        try:
+            supabase.table("members").insert(row).execute()
+        except Exception as e:
+            print(f"❌ 受講生の行が作れませんでした ({email}): {e}")
+            raise HTTPException(status_code=500, detail="最後のところで止まりました。もう一度お試しください")
 
     return {"ok": True, "email": email, "name": name}
 
 
 class MemberActive(BaseModel):
-    active: bool
+    active: Optional[bool] = None
+    alumni: Optional[bool] = None       # 卒業生サロンの方か
+    continuing: Optional[bool] = None   # 継続コースの方か（水曜も出る）
 
 
 @app.patch("/api/members/{member_id}")
 async def update_member(member_id: str, request: MemberActive, x_teacher_key: str = Header(None)):
-    """在籍中↔退会 の切り替え。退会にすると、その場で入れなくなる。"""
+    """在籍中↔退会 の切り替えと、種別（本講座／卒業生／継続コース）の変更。
+    退会にすると、その場で入れなくなる。"""
     require_teacher(x_teacher_key)
-    supabase.table("members").update({"active": request.active}).eq("id", member_id).execute()
-    return {"ok": True, "active": request.active}
+    patch = {}
+    if request.active is not None:
+        patch["active"] = request.active
+    if request.alumni is not None:
+        patch["alumni"] = request.alumni
+    if request.continuing is not None:
+        patch["continuing"] = request.continuing
+        # 継続コースの方は卒業生サロンにも参加できるので、alumni も一緒に立てる
+        if request.continuing and request.alumni is None:
+            patch["alumni"] = True
+    if not patch:
+        raise HTTPException(status_code=400, detail="変えるものがありません")
+    try:
+        supabase.table("members").update(patch).eq("id", member_id).execute()
+    except Exception:
+        # continuing 列をまだ作っていないとき（schema_alumni.sql 未実行）
+        if "continuing" not in patch:
+            raise
+        raise HTTPException(status_code=400,
+                            detail="Supabase の SQL Editor で schema_alumni.sql を実行してください")
+    return {"ok": True, **patch}
 
 
 # ---- 全開放（アップセル）----
@@ -963,8 +1014,19 @@ class QaSessionRequest(BaseModel):
 async def list_qa_sessions(authorization: str = Header(None),
                            x_teacher_key: str = Header(None),
                            student_name: str = None):
-    # 動画のIDが入っているので、動画教材と同じく会員だけに渡す
-    await viewer_scope(authorization, x_teacher_key, student_name)
+    # 動画のIDが入っているので、動画教材と同じく会員だけに渡す。
+    # 質問会はPhotelierサロンの場（2026-10-30 本人指示）。
+    # 本講座の方（受講生・卒業生・既存6名）には空を返す＝タイル自体が出ない。
+    # 本講座には水曜リアルセミナーのアーカイブがある（動画教材の「リアルセミナー」）。
+    if not is_teacher(x_teacher_key):
+        legacy_pass = legacy_pass_from_auth(authorization)
+        if legacy_pass is not None:
+            if not is_legacy_ok(student_name, legacy_pass):
+                raise HTTPException(status_code=401, detail="合言葉が必要です")
+            return {"sessions": [], "ready": True}
+        member = await member_from_token(authorization)
+        if member["tier"] != "subscription":
+            return {"sessions": [], "ready": True}
     try:
         rows = supabase.table("qa_sessions").select("*").order(
             "held_on", desc=True).execute().data or []
@@ -997,6 +1059,75 @@ async def delete_qa_session(session_id: int, x_teacher_key: str = Header(None)):
     return {"status": "ok"}
 
 
+# ---- 卒業生サロンのアーカイブ ----
+# 月初金曜のライブ添削の録画。今まではLINEで送っていた（2026-10-30 本人決定でアプリへ）。
+# 見せ方の線:
+#   卒業生（members.alumni = true）… 全部の回
+#   受講中の方（tier = course）    … 最新の1回だけ（「こんな感じなら入ろう」の入口）
+#   サロン（tier = subscription）  … 出さない（卒業生サロンは本講座を修了した方の場）
+# 全部を無料側に置くと卒業生サロンに入る理由が消えるので、絞るのは必ずここサーバー側で。
+
+class AlumniSessionRequest(BaseModel):
+    held_on: str
+    title: str
+    vimeo_id: str
+    vimeo_h: Optional[str] = None
+    note: Optional[str] = None
+
+
+@app.get("/api/alumni-sessions")
+async def list_alumni_sessions(authorization: str = Header(None),
+                               x_teacher_key: str = Header(None),
+                               student_name: str = None):
+    if is_teacher(x_teacher_key):
+        scope = "all"
+    else:
+        legacy_pass = legacy_pass_from_auth(authorization)
+        if legacy_pass is not None:
+            # 既存6名（お名前＋合言葉）。受講中の方と同じ扱い＝最新の1回だけ。
+            if not is_legacy_ok(student_name, legacy_pass):
+                raise HTTPException(status_code=401, detail="合言葉が必要です")
+            scope = "latest"
+        else:
+            member = await member_from_token(authorization)
+            if member["tier"] != "course":
+                return {"sessions": [], "scope": "none", "total": 0, "ready": True}
+            scope = "all" if member.get("alumni") else "latest"
+    try:
+        rows = supabase.table("alumni_sessions").select("*").order(
+            "held_on", desc=True).execute().data or []
+    except Exception:
+        # まだ schema_alumni.sql を実行していないとき。動画教材まで止めない。
+        return {"sessions": [], "scope": scope, "total": 0, "ready": False}
+    total = len(rows)
+    if scope == "latest":
+        rows = rows[:1]
+    return {"sessions": rows, "scope": scope, "total": total, "ready": True}
+
+
+@app.post("/api/alumni-sessions")
+async def add_alumni_session(request: AlumniSessionRequest, x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
+    vimeo_id = request.vimeo_id.strip().rstrip("/").split("/")[-1]
+    if not vimeo_id.isdigit():
+        raise HTTPException(status_code=400, detail="Vimeoの動画IDは数字です（URLの最後の数字）")
+    row = supabase.table("alumni_sessions").insert({
+        "held_on": request.held_on,
+        "title": request.title.strip(),
+        "vimeo_id": vimeo_id,
+        "vimeo_h": (request.vimeo_h or "").strip() or None,
+        "note": (request.note or "").strip() or None,
+    }).execute().data
+    return {"status": "ok", "session": row[0] if row else None}
+
+
+@app.delete("/api/alumni-sessions/{session_id}")
+async def delete_alumni_session(session_id: int, x_teacher_key: str = Header(None)):
+    require_teacher(x_teacher_key)
+    supabase.table("alumni_sessions").delete().eq("id", session_id).execute()
+    return {"status": "ok"}
+
+
 # ---- 質問会の日程 ----
 # 毎月 第4金曜 21:00。12月だけは第4金曜がクリスマス前後に当たるので第3金曜。
 # 初回は 2026/9/18。8/28（第4金曜）は1dayレッスンの日なので質問会はやらない。
@@ -1014,7 +1145,17 @@ QA_ZOOM_URL = "https://us02web.zoom.us/j/86947628346?pwd=5dbZMfks8X6VpWIYssAxs4f
 # 受講生の画面にだけ出る。URLが決まったら、この1行に貼る（空のままなら、ボタンは出ない）。
 SEMINAR_ZOOM_URL = "https://us02web.zoom.us/j/7103987614?pwd=YlNoTTd1TlRlOFhjd2QydXVYa0VGdz09&omn=86751484388"
 
-# その月だけ日をずらしたいとき。{(年, 月): 開催日}
+# 卒業生サロン（毎月 月初=第1金曜の午前）のzoomの部屋。毎回おなじ部屋。
+# 卒業生（members.alumni = true）の画面にだけ出す。
+ALUMNI_ZOOM_URL = "https://us02web.zoom.us/j/83052981573?pwd=Zmx2V092TytkeVRieEZwNWx6VEk5Zz09"
+ALUMNI_TIME = "10:00"   # 開始時間。変わったらここだけ書き換える（さちえ先生に確認して入れた値）
+
+# 卒業生サロンで、その月だけ日をずらしたいとき。{(年, 月): 開催日}
+ALUMNI_OVERRIDES = {
+    (2027, 1): date(2027, 1, 8),  # 第1金曜が元日(1/1)なので次の週へ。2026-10-30 本人指示
+}
+
+# 質問会で、その月だけ日をずらしたいとき。{(年, 月): 開催日}
 # 用が済んだ行は消さずに残しておくと、あとから「あの月はいつだったか」を追える。
 QA_OVERRIDES = {
     (2026, 9): date(2026, 9, 18),   # 初回。第4金曜(9/25)はさちえ先生に先約があるため1週間前倒し
@@ -1046,6 +1187,29 @@ def next_qa_date(today: Optional[date] = None) -> date:
     return QA_FIRST
 
 
+def alumni_session_date(year: int, month: int) -> date:
+    """その月の卒業生サロンの日。月初＝第1金曜。"""
+    if (year, month) in ALUMNI_OVERRIDES:
+        return ALUMNI_OVERRIDES[(year, month)]
+    first = date(year, month, 1)
+    offset = (4 - first.weekday()) % 7        # weekday: 月=0 … 金=4
+    return date(year, month, 1 + offset)
+
+
+def next_alumni_date(today: Optional[date] = None) -> date:
+    """次の卒業生サロンの日。当日はまだ「次」として扱う。"""
+    today = today or date.today()
+    y, m = today.year, today.month
+    for _ in range(14):
+        d = alumni_session_date(y, m)
+        if d >= today:
+            return d
+        m += 1
+        if m > 12:
+            y, m = y + 1, 1
+    return alumni_session_date(today.year, today.month)
+
+
 def qa_accepting_for(today: Optional[date] = None) -> date:
     """今いただいた質問を、どの回で扱うか。締切を過ぎていたら次の回に回す。"""
     today = today or date.today()
@@ -1066,10 +1230,17 @@ async def qa_next(authorization: str = Header(None)):
     # zoomのURLは、在籍中の会員さんにだけ渡す。
     # ログインしていない人には日付だけ返す（画面が止まらないように）。
     try:
-        await member_from_token(authorization)
+        member = await member_from_token(authorization)
         result["zoom_url"] = QA_ZOOM_URL
-        if SEMINAR_ZOOM_URL:
+        # 水曜リアルセミナーは受講中の方の場。卒業生にはURL自体を渡さない。
+        # 継続コースの方（alumni かつ continuing）は水曜にも出るので渡す。
+        if SEMINAR_ZOOM_URL and not hides_seminar(member):
             result["seminar_zoom_url"] = SEMINAR_ZOOM_URL
+        # 卒業生には、卒業生サロン（月初金曜）の日程とzoomを返す
+        if member.get("alumni"):
+            result["alumni_next"] = next_alumni_date().isoformat()
+            result["alumni_time"] = ALUMNI_TIME
+            result["alumni_zoom_url"] = ALUMNI_ZOOM_URL
     except HTTPException:
         pass
     return result
@@ -1587,7 +1758,19 @@ class SubmissionRequest(BaseModel):
 
 @app.post("/api/submit")
 async def submit_assignment(request: SubmissionRequest, authorization: str = Header(None)):
-    await require_owner(request.student_name, authorization)
+    # 写真を出せるのは、本講座・継続コース・卒業生サロンの方（tier='course'）と、
+    # お名前で入る既存6名（2026-11-04 本人指示）。
+    # Photelierサロンの方には添削がないので、ここで止める
+    # （画面にボタンを出さないだけでは、直接呼べば通ってしまうため）。
+    if "@" in (request.student_name or ""):
+        member = await member_from_token(authorization)
+        if member["email"].strip().lower() != request.student_name.strip().lower():
+            raise HTTPException(status_code=403, detail="ほかの方のデータは見られません")
+        if member.get("tier") != "course":
+            raise HTTPException(status_code=403,
+                                detail="写真の提出は、本講座・卒業生サロンの方の機能です")
+    else:
+        await require_owner(request.student_name, authorization)
     try:
         supabase.table("submissions").insert({
             "student_name": request.student_name,
@@ -1614,14 +1797,90 @@ async def get_submissions(student_name: str, authorization: str = Header(None),
         return {"submissions": []}
 
 @app.get("/api/all-submissions")
-async def get_all_submissions(x_teacher_key: str = Header(None)):
+async def get_all_submissions(x_teacher_key: str = Header(None), limit: int = 100):
+    """写真の提出を、新しい順に。水曜のセミナーで上から順に見ていくための一覧。
+    ★ 写真そのものは入れない（1枚3〜8MBあるので、全部入れると画面が開かなくなる）。
+      写真は一覧に並んだあと、1件ずつ /api/submission/{id} で取りに行く。
+    ★ 写真の提出だけを出す。受講生の画面を共有しながら添削するので、
+      テキストの課題（ペルソナ設定など）が混ざらないようにしている（2026-11-04 本人）。"""
+    require_teacher(x_teacher_key)
+    cols = "id,student_name,assignment_name,content,url,submitted_at"
+    for extra in (",annotated_at", ""):
+        try:
+            result = (supabase.table("submissions").select(cols + extra)
+                      .eq("assignment_name", "写真提出")
+                      .order("submitted_at", desc=True).limit(limit).execute())
+            rows = result.data
+            # メールで入る方の student_name はメールアドレスなので、お名前に直して並べる。
+            # あわせて「本講座／卒業生サロン」の別も付ける
+            # （添削のときに探さなくていいように / 2026-11-04 本人）。
+            # ★ 継続コースの方は本講座と一緒でよい（2026-11-04 本人）。
+            info = {}
+            try:
+                sel = "email,name,alumni,continuing"
+                for c in (sel, "email,name,alumni", "email,name"):
+                    try:
+                        members = supabase.table("members").select(c).execute()
+                        break
+                    except Exception:
+                        continue
+                info = {m["email"]: m for m in (members.data or [])}
+            except Exception as e:
+                print(f"⚠ 会員情報の取得に失敗（メールのまま表示します）: {e}")
+            for r in rows:
+                key = (r.get("student_name") or "").strip().lower()
+                m = info.get(key)
+                if m:
+                    r["student_name"] = m["name"]
+                    r["group"] = ("卒業生サロン"
+                                  if m.get("alumni") and not m.get("continuing")
+                                  else "本講座")
+                else:
+                    r["group"] = "本講座"   # お名前で入る既存6名
+            return {"submissions": rows}
+        except Exception as e:
+            err = e
+    print(f"❌ 全提出物取得エラー: {err}")
+    return {"submissions": []}
+
+
+@app.get("/api/submission/{submission_id}")
+async def get_submission(submission_id: int, x_teacher_key: str = Header(None)):
+    """1件ぶんの写真（元・添削後）を取り出す。"""
     require_teacher(x_teacher_key)
     try:
-        result = supabase.table("submissions").select("*").order("submitted_at", desc=True).execute()
-        return {"submissions": result.data}
+        result = (supabase.table("submissions").select("*")
+                  .eq("id", submission_id).limit(1).execute())
+        if not result.data:
+            raise HTTPException(status_code=404, detail="見つかりませんでした")
+        return result.data[0]
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"❌ 全提出物取得エラー: {e}")
-        return {"submissions": []}
+        print(f"❌ 提出物1件の取得エラー: {e}")
+        raise HTTPException(status_code=500, detail="読み込めませんでした")
+
+
+class AnnotateRequest(BaseModel):
+    image: str   # 線を書いたあとの写真（base64・data: のヘッダは外して送る）
+
+
+@app.post("/api/submissions/{submission_id}/annotate")
+async def save_annotation(submission_id: int, request: AnnotateRequest,
+                          x_teacher_key: str = Header(None)):
+    """添削後の写真を保存する。元の写真（image_data）はそのまま残す
+    ＝ ビフォーアフターの2枚が手元に残る（2026-10-06 本人決定）。"""
+    require_teacher(x_teacher_key)
+    try:
+        supabase.table("submissions").update({
+            "annotated_image": request.image,
+            "annotated_at": datetime.now().isoformat(),
+        }).eq("id", submission_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        print(f"❌ 添削の保存エラー: {e}")
+        raise HTTPException(status_code=500,
+                            detail="保存できませんでした。Supabase の SQL は実行済みでしょうか")
 
 # ---- 発信ネタ出しツール（本講座の受講生だけ） ----
 # サロン会員（tier='subscription'）には出さない。

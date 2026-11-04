@@ -225,6 +225,22 @@
       background: white;
     }
     .submit-field textarea { resize: vertical; min-height: 100px; }
+    /* 撮影前に考える3ステップ */
+    .submit-step { margin-bottom: 10px; }
+    .submit-step-q {
+      font-size: 12.5px;
+      color: #3a5a6a;
+      margin-bottom: 4px;
+    }
+    #submit-steps-field textarea { min-height: 54px; }
+    .submit-step-link {
+      display: inline-block;
+      margin-top: 2px;
+      font-size: 12px;
+      color: #5d8fa3;
+      text-decoration: none;
+    }
+    .submit-step-link:hover { text-decoration: underline; }
     #submit-image-preview-wrap {
       display: none;
       margin-top: 8px;
@@ -1714,20 +1730,39 @@
 <!-- 課題提出モーダル -->
 <div id="submit-overlay" onclick="closeSubmitModal()">
   <div id="submit-modal" onclick="event.stopPropagation()">
-    <h3>📝 課題を提出する</h3>
+    <h3 id="submit-modal-title">📝 課題を提出する</h3>
     <div id="submit-form-wrap">
-      <div class="submit-field">
+      <div class="submit-field" id="submit-task-field">
         <label>提出する課題</label>
         <select id="submit-task-select">
           <option value="">-- 課題を選んでください --</option>
         </select>
       </div>
-      <div class="submit-field">
-        <label>内容<span class="optional">（テキストで書いてね）</span></label>
+      <div class="submit-field" id="submit-content-field">
+        <label id="submit-content-label">内容<span class="optional">（テキストで書いてね）</span></label>
         <textarea id="submit-content" placeholder="例：ペルソナ設定の内容を入力してください..."></textarea>
       </div>
+      <!-- 写真の提出のときだけ出る「撮影前に考える3ステップ」 -->
+      <div class="submit-field" id="submit-steps-field" style="display:none">
+        <label>撮影前に考える3ステップ<span class="optional">（この3つを言葉にしてから撮ると、写真が変わります）</span></label>
+        <div class="submit-step">
+          <div class="submit-step-q">① 商品の魅力はどこなのかを観察する</div>
+          <textarea id="submit-step1" placeholder="例：口紅のつやと、角の丸いフォルム"></textarea>
+        </div>
+        <div class="submit-step">
+          <div class="submit-step-q">② 誰がどんな場面で使うのかを考える</div>
+          <textarea id="submit-step2" placeholder="例：30代の働く女性が、出かける前の朝に"></textarea>
+        </div>
+        <div class="submit-step">
+          <div class="submit-step-q">③ どんな気持ちになって欲しいかを考える</div>
+          <textarea id="submit-step3" placeholder="例：今日もがんばろう、と背筋がのびる気持ち"></textarea>
+        </div>
+        <a class="submit-step-link" href="https://vimeo.com/1061108179/d68001cd72?fl=pl&fe=vl" target="_blank" rel="noopener">
+          ▶ 動画でもう一度みる（テーブルフォト撮影前に考えるべき3ステップ）
+        </a>
+      </div>
       <div class="submit-field">
-        <label>画像<span class="optional">（任意）</span></label>
+        <label id="submit-image-label">画像<span class="optional">（任意）</span></label>
         <input type="file" id="submit-image-input" accept="image/*" style="display:none" onchange="handleSubmitImageSelect(event)">
         <div id="submit-image-upload-btn" onclick="document.getElementById('submit-image-input').click()">
           🖼️ 画像を追加する
@@ -1737,7 +1772,7 @@
           <div id="submit-image-remove" onclick="removeSubmitImage()">✕</div>
         </div>
       </div>
-      <div class="submit-field">
+      <div class="submit-field" id="submit-url-field">
         <label>URL<span class="optional">（任意：CanvaリンクなどあればここにペースとしてOK）</span></label>
         <input type="text" id="submit-url" placeholder="https://...">
       </div>
@@ -1827,7 +1862,18 @@
          style="display:none;">zoomで参加する →</a>
     </div>
 
-    <!-- 次の質問会（サロン会員だけ）。日程はサーバー（/api/qa-next）が決めている -->
+    <!-- 次の卒業生サロン（卒業生だけ）。日程（月初金曜）はサーバーが決めている -->
+    <div class="qa-bar" id="home-alumni-bar" style="display:none;">
+      <div class="av">🗓</div>
+      <div class="txt">
+        <b>次の卒業生サロンは <span id="home-alumni-date">…</span> <span id="home-alumni-time"></span>〜</b>
+        <small>毎月1回 月初の金曜の午前にひらいています。ご都合が合わなくても、あとから「動画教材」の卒業生サロン アーカイブでご覧いただけます。</small>
+      </div>
+      <a class="ph-btn" id="home-alumni-zoom" target="_blank" rel="noopener noreferrer"
+         style="display:none;">zoomで参加する →</a>
+    </div>
+
+    <!-- 次の質問会（サロン会員と卒業生）。日程はサーバー（/api/qa-next）が決めている -->
     <div class="qa-bar" id="home-qa-bar">
       <div class="av">🗓</div>
       <div class="txt">
@@ -2157,9 +2203,16 @@
     // チャットのやりとり自体が学びの記録になるので「会話をリセット」も出さない。
     // ★既存6名はここを通らない（お名前で入る方は member が null）。今までどおりのまま。
     if (m.tier === 'subscription' || m.tier === 'course') {
-      ['checklist-btn', 'submit-btn', 'booking-btn', 'reset-btn'].forEach(id => {
+      ['checklist-btn', 'booking-btn', 'reset-btn'].forEach(id => {
         document.getElementById(id).style.display = 'none';
       });
+      // ★ 写真の提出だけは、本講座・継続コース・卒業生サロンの方（tier=course）にお出しする
+      //    （2026-11-04 本人指示）。Photelierサロンの方は添削がないので出さない。
+      if (m.tier === 'course') {
+        document.getElementById('submit-btn').textContent = '写真を提出';
+      } else {
+        document.getElementById('submit-btn').style.display = 'none';
+      }
     }
     afterEnter();
   }
@@ -2455,10 +2508,16 @@
   }
 
   async function homeQaBoot() {
-    // 月1回の質問会はサロンのもの。受講生には毎週水曜のリアルセミナーをお出しする
+    // 月1回の質問会はサロンと卒業生のもの。受講中の方には毎週水曜のリアルセミナーをお出しする。
+    // 卒業生には「質問会」と「卒業生サロン（月初金曜）」の2本をお出しする（水曜セミナーは出さない）。
+    // 継続コースの方は水曜にも出ていらっしゃるので、水曜も一緒にお出しする（2026-11-04 本人指示）。
     const isSalon = homeTier() === 'subscription';
-    document.getElementById('home-seminar').style.display = isSalon ? 'none' : '';
-    document.getElementById('home-qa-bar').style.display = isSalon ? '' : 'none';
+    const isAlumni = !!(member && member.alumni);
+    const isContinuing = !!(member && member.continuing);
+    const showQa = isSalon || isAlumni;
+    document.getElementById('home-seminar').style.display =
+      (showQa && !isContinuing) ? 'none' : '';
+    document.getElementById('home-qa-bar').style.display = showQa ? '' : 'none';
     document.getElementById('home-qa-form').style.display = 'none';
     try {
       const qa = await (await fetch('/api/qa-next', { headers: authHeaders() })).json();
@@ -2467,7 +2526,18 @@
         sz.href = qa.seminar_zoom_url;
         sz.style.display = '';
       }
-      if (!isSalon) return;   // ここから下は質問会のぶん
+      // 卒業生サロンの日程。サーバーが卒業生にだけ返してくる
+      if (isAlumni && qa.alumni_next) {
+        document.getElementById('home-alumni-bar').style.display = '';
+        document.getElementById('home-alumni-date').textContent = homeQaFormat(qa.alumni_next);
+        document.getElementById('home-alumni-time').textContent = qa.alumni_time || '';
+        if (qa.alumni_zoom_url) {
+          const az = document.getElementById('home-alumni-zoom');
+          az.href = qa.alumni_zoom_url;
+          az.style.display = '';
+        }
+      }
+      if (!showQa) return;   // ここから下は質問会のぶん
       document.getElementById('home-qa-date').textContent = homeQaFormat(qa.next);
       // zoomのURLは会員さんにだけサーバーから返ってくる
       if (qa.zoom_url) {
@@ -2757,8 +2827,10 @@
 
     // 月ごとに開いていくのはサロン会員だけ（受講生は最初から全部ひらいている）
     const sub = homeTier() === 'subscription';
-    // 写真を提出できるのは既存6名だけ。ほかの方は添削がないので、チャットに誘導する
-    const canSubmit = (member === null);
+    // 写真を提出できるのは、お名前で入る既存6名と、tier=course の方
+    // （本講座・継続コース・卒業生サロン / 2026-11-04 本人指示）。
+    // Photelierサロンの方は添削がないので、チャットに誘導する。
+    const canSubmit = (member === null) || homeTier() === 'course';
 
     if (!next) {
       step.textContent = sub ? '今開いている分は、ぜんぶ見終わりました' : 'すべて視聴済みです';
@@ -3348,7 +3420,28 @@
 
   // ---- 課題提出フォーム ----
 
+  // 写真だけを出す形（課題を選ばない）。メール＋パスワードで入る方＝tier=course はこちら。
+  // お名前で入る既存6名は、今までどおり課題を選ぶ形のまま。
+  function isPhotoSubmit() { return member !== null; }
+
   function openSubmitModal() {
+    const photo = isPhotoSubmit();
+    document.getElementById('submit-task-field').style.display = photo ? 'none' : 'block';
+    document.getElementById('submit-url-field').style.display = photo ? 'none' : 'block';
+    document.getElementById('submit-modal-title').textContent =
+      photo ? '📷 写真を提出する' : '📝 課題を提出する';
+    // 写真の提出は「撮影前に考える3ステップ」を書いてもらう（2026-11-04 本人指示）。
+    // 撮る前に「何を伝えたいか」を考えて撮ることが一番大事なので、ここが添削の土台になる。
+    document.getElementById('submit-steps-field').style.display = photo ? 'block' : 'none';
+    document.getElementById('submit-content-field').style.display = photo ? 'none' : 'block';
+    document.getElementById('submit-image-label').innerHTML = photo
+      ? '写真'
+      : '画像<span class="optional">（任意）</span>';
+    document.getElementById('submit-image-upload-btn').textContent =
+      photo ? '📷 写真を選ぶ' : '🖼️ 画像を追加する';
+    document.getElementById('submit-send-btn').textContent =
+      photo ? '提出する 📷' : '提出する ✉️';
+
     // 提出タスク一覧をリセット＆再構築
     const sel = document.getElementById('submit-task-select');
     sel.innerHTML = '<option value="">-- 課題を選んでください --</option>';
@@ -3364,6 +3457,8 @@
     }
     // フォームをリセット
     document.getElementById('submit-content').value = '';
+    ['submit-step1', 'submit-step2', 'submit-step3']
+      .forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('submit-url').value = '';
     removeSubmitImage();
     document.getElementById('submit-form-wrap').style.display = 'block';
@@ -3400,10 +3495,23 @@
   }
 
   async function submitAssignment() {
-    const taskName = document.getElementById('submit-task-select').value;
-    const content = document.getElementById('submit-content').value.trim();
-    if (!taskName) { alert('課題を選んでね！'); return; }
-    if (!content && !selectedSubmitImage) { alert('内容か画像を入力してね！'); return; }
+    const photo = isPhotoSubmit();
+    // 写真の提出は課題を選ばないので、名前は「写真提出」で固定して入れる
+    const taskName = photo ? '写真提出' : document.getElementById('submit-task-select').value;
+    let content = document.getElementById('submit-content').value.trim();
+    if (photo) {
+      if (!selectedSubmitImage) { alert('写真を選んでくださいね📷'); return; }
+      // 3ステップの答えを1つの文にまとめて送る（書けたところだけでOK）
+      const steps = [
+        ['①商品の魅力', document.getElementById('submit-step1').value.trim()],
+        ['②誰がどんな場面で', document.getElementById('submit-step2').value.trim()],
+        ['③どんな気持ちになって欲しいか', document.getElementById('submit-step3').value.trim()],
+      ].filter(s => s[1]);
+      content = steps.map(s => `${s[0]}：${s[1]}`).join('\n');
+    } else {
+      if (!taskName) { alert('課題を選んでね！'); return; }
+      if (!content && !selectedSubmitImage) { alert('内容か画像を入力してね！'); return; }
+    }
 
     const btn = document.getElementById('submit-send-btn');
     btn.disabled = true;
@@ -3430,7 +3538,7 @@
     } catch (e) {
       alert('送信に失敗しました。もう一度試してね😢');
       btn.disabled = false;
-      btn.textContent = '提出する ✉️';
+      btn.textContent = photo ? '提出する 📷' : '提出する ✉️';
     }
   }
 
@@ -3499,6 +3607,7 @@ const LIB_CAT_IMG = {
   'video':              '/static/mock-assets/t8.jpg',
   'seminar':            '/static/mock-assets/t9.jpg',
   'qa-archive':         '/static/mock-assets/t3.jpg',
+  'alumni-archive':     '/static/mock-assets/t9.jpg',
 };
 
 async function libBoot() {
@@ -3511,12 +3620,14 @@ async function libBoot() {
   if (!res.ok) throw new Error('動画教材を読み込めませんでした');
   LIB_DATA = await res.json();
   await libLoadQa();
+  await libLoadAlumni();
   libLoaded = true;
 }
 
 // 月1回の質問会アーカイブ。毎月増えるのでファイルではなくサーバーから受け取る。
-// 入会した月に関係なく、全員がすべての回を見られる（month: 0）。
-// まだ1回もなければカテゴリごと出さない。
+// 質問会はPhotelierサロンの場なので、サロン会員だけ（本講座の方にはサーバーが空を返す）。
+// 入会した月に関係なく、すべての回を見られる（month: 0）。
+// まだ1回もなければ（または空が返ったら）カテゴリごと出さない。
 async function libLoadQa() {
   try {
     const q = member ? '' : '?student_name=' + encodeURIComponent(currentStudent);
@@ -3529,6 +3640,34 @@ async function libLoadQa() {
       ja: '質問会アーカイブ',
       note: '月1回',
       en: 'Q&A Archive',
+      month: 0,
+      videos: sessions.map(s => ({
+        id: String(s.vimeo_id),
+        h: s.vimeo_h || undefined,
+        sub: (s.held_on || '').replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1年$2月$3日'),
+        title: s.title,
+        summary: s.note || undefined
+      }))
+    });
+  } catch (e) { /* 取れなくても教材は開く */ }
+}
+
+// 卒業生サロン（月初金曜・ライブ添削）のアーカイブ。
+// 誰にどこまで見せるかはサーバーが決める（卒業生=全部／受講中=最新1回／サロン=出さない）。
+// サーバーが空を返した人には、カテゴリのタイルごと出ない。
+async function libLoadAlumni() {
+  try {
+    const q = member ? '' : '?student_name=' + encodeURIComponent(currentStudent);
+    const res = await fetch('/api/alumni-sessions' + q, { headers: authHeaders() });
+    const data = await res.json();
+    const sessions = data.sessions || [];
+    if (sessions.length === 0) return;
+    const latestOnly = data.scope === 'latest';
+    LIB_DATA.categories.push({
+      slug: 'alumni-archive',
+      ja: '卒業生サロン アーカイブ',
+      note: latestOnly ? '最新の回' : '月初金曜',
+      en: 'Alumni Salon',
       month: 0,
       videos: sessions.map(s => ({
         id: String(s.vimeo_id),
