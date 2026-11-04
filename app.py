@@ -376,6 +376,10 @@ class PasswordResetRequest(BaseModel):
     email: str
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 def member_public(member: dict) -> dict:
     return {
         "key": member["email"],
@@ -408,7 +412,29 @@ async def login(request: LoginRequest):
     if not member.get("active", True):
         raise HTTPException(status_code=403, detail="サロンのご利用期間が終了しています。またいつでもお戻りくださいね😊")
 
-    return {"token": res.json()["access_token"], "member": member_public(member)}
+    data = res.json()
+    return {
+        "token": data["access_token"],
+        # 札（トークン）は1時間で切れる。切れたときに入り直していただかなくて済むよう、
+        # 取り直すための控え（refresh_token）も一緒にお渡しする。
+        "refresh": data.get("refresh_token"),
+        "member": member_public(member),
+    }
+
+
+@app.post("/api/refresh")
+async def refresh_token(body: RefreshRequest):
+    """期限が切れた札を、控えを使って取り直す。（控えも毎回新しくなる）"""
+    async with httpx.AsyncClient(timeout=15) as http:
+        res = await http.post(
+            f"{SUPABASE_URL}/auth/v1/token?grant_type=refresh_token",
+            headers={"apikey": SUPABASE_KEY, "Content-Type": "application/json"},
+            json={"refresh_token": body.refresh_token},
+        )
+    if res.status_code != 200:
+        raise HTTPException(status_code=401, detail="ログインし直してください")
+    data = res.json()
+    return {"token": data["access_token"], "refresh": data.get("refresh_token")}
 
 
 async def member_from_token(authorization: Optional[str]) -> dict:

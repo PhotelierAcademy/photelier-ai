@@ -2113,6 +2113,48 @@
     return h;
   }
 
+  // ログインの札は1時間で切れる。切れたまま使うと「ログインが切れました」と出て
+  // 入り直していただくことになるので、控え（refresh）で裏側で取り直す。
+  let refreshing = null;
+  async function refreshLogin() {
+    const refresh = localStorage.getItem('photelier_refresh');
+    if (!refresh) return false;
+    if (!refreshing) {
+      refreshing = (async () => {
+        try {
+          const res = await fetch('/api/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refresh })
+          });
+          if (!res.ok) return false;
+          const data = await res.json();
+          localStorage.setItem('photelier_token', data.token);
+          if (data.refresh) localStorage.setItem('photelier_refresh', data.refresh);
+          return true;
+        } catch (e) { return false; }
+        finally { setTimeout(() => { refreshing = null; }, 0); }
+      })();
+    }
+    return refreshing;
+  }
+
+  // 札が切れた状態で何かを開いても、1回だけ裏で取り直してやり直す。
+  // （画面にはいつもどおり出るだけで、入り直していただく必要はない）
+  const rawFetch = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const res = await rawFetch(input, init);
+    if (res.status !== 401) return res;
+    const url = String((input && input.url) || input || '');
+    if (url.includes('/api/refresh') || url.includes('/api/login')) return res;
+    const auth = (init && init.headers && (init.headers['Authorization'] || init.headers.Authorization)) || '';
+    if (!String(auth).startsWith('Bearer ')) return res;
+    if (!(await refreshLogin())) return res;
+    const retry = Object.assign({}, init);
+    retry.headers = Object.assign({}, init.headers, { Authorization: 'Bearer ' + localStorage.getItem('photelier_token') });
+    return rawFetch(input, retry);
+  };
+
   // 合言葉を入れている途中で、お名前の一覧を取りに行く。
   // 合っていれば名前が並び、違えば空のまま。
   let legacyPassTimer = null;
@@ -2182,6 +2224,7 @@
         return;
       }
       localStorage.setItem('photelier_token', data.token);
+      if (data.refresh) localStorage.setItem('photelier_refresh', data.refresh);
       enterAsMember(data.member);
     } catch (e) {
       showLoginError('通信に失敗しました。時間をおいてもう一度お試しください');
@@ -2224,6 +2267,7 @@
 
   function logout() {
     localStorage.removeItem('photelier_token');
+    localStorage.removeItem('photelier_refresh');
     location.reload();
   }
 
@@ -2263,12 +2307,15 @@
     const token = localStorage.getItem('photelier_token');
     if (!token) return;
     try {
+      // 札が切れていても、上の仕掛けが控えで取り直してからやり直してくれる
       const res = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
       if (res.ok) {
         const data = await res.json();
         enterAsMember(data.member);
-      } else {
+      } else if (res.status === 401) {
+        // 控えも効かなかった＝本当に入り直していただくとき
         localStorage.removeItem('photelier_token');
+        localStorage.removeItem('photelier_refresh');
       }
     } catch (e) {
       // オフライン等。ログイン画面のままでよい
