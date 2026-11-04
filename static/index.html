@@ -1346,6 +1346,11 @@
     #library-overlay .vid-body { padding: 16px 20px 20px; }
     #library-overlay .vid-sub { font-family: var(--sans); color: var(--text-soft); font-size: 11px; letter-spacing: .12em; margin-bottom: 5px; }
     #library-overlay .vid-title { font-family: var(--serif); color: var(--text); font-weight: 600; font-size: 16px; letter-spacing: .03em; line-height: 1.5; }
+    /* 本数が多いカテゴリ（リアルセミナー）の月の見出し */
+    #library-overlay .vid-month { grid-column: 1/-1; font-family: var(--serif); color: var(--blue-deep);
+      font-size: 15px; font-weight: 600; letter-spacing: .08em; padding-bottom: 8px; margin-top: 14px;
+      border-bottom: 1px solid var(--line-soft); }
+    #library-overlay .vid-month:first-child { margin-top: 0; }
     @media(max-width:640px){ #library-overlay .vids { grid-template-columns: 1fr; } }
 
     #library-overlay .empty { padding: 40px; text-align: center; color: var(--text-soft); font-size: 14px; line-height: 2;
@@ -3808,7 +3813,24 @@ function libShowList(slug) {
   if (vids.length === 0) {
     wrap.innerHTML = `<div class="empty" style="grid-column:1/-1;">このカテゴリの動画は準備中です。</div>`;
   } else {
-    vids.forEach((v, i) => {
+    // リアルセミナーのように本数が多くて「日付の記録」になっているものは、
+    // 新しい回を上にして、月ごとに見出しで区切る（d: "2026-10-28" が入っているもの）。
+    const byDate = vids.every(v => v.d);
+    const order = vids.map((v, i) => ({ v, i }));
+    if (byDate) order.reverse();
+    let curMonth = '';
+    order.forEach(({ v, i }) => {
+      if (byDate) {
+        const [y, m] = v.d.split('-');
+        const label = `${y}年${Number(m)}月`;
+        if (label !== curMonth) {
+          curMonth = label;
+          const h = document.createElement('div');
+          h.className = 'vid-month';
+          h.textContent = label;
+          wrap.appendChild(h);
+        }
+      }
       const isWatched = libWatched.has(String(v.id));
       const el = document.createElement('div');
       el.className = 'vid-card' + (isWatched ? ' watched' : '');
