@@ -531,6 +531,14 @@
     #tensaku-close {
       border: none; background: none; font-size: 20px; cursor: pointer; color: #8aa0ad;
     }
+    /* 提出のときに書いてくれた文章（商品の魅力・誰にどう思われたいか など） */
+    #tensaku-note {
+      display: none; padding: 12px 16px; background: #f7fbfd;
+      border-bottom: 1px solid #e3ebef; color: #3D5564;
+      font-size: 14px; line-height: 1.8; white-space: pre-wrap;
+      max-height: 22vh; overflow-y: auto;
+    }
+    #tensaku-note.on { display: block; }
     #tensaku-stage {
       flex: 1; overflow: auto; background: #eef3f6; padding: 12px;
       display: flex; align-items: center; justify-content: center;
@@ -799,6 +807,7 @@
       <div id="tensaku-title">写真の添削</div>
       <button id="tensaku-close" onclick="closeTensaku()">✕</button>
     </div>
+    <div id="tensaku-note"></div>
     <div id="tensaku-stage"><canvas id="tensaku-canvas"></canvas></div>
     <div id="tensaku-tools">
       <span class="tk-color on" style="background:#ffffff" onclick="tkColor(this,'#ffffff')"></span>
@@ -1254,8 +1263,15 @@
     const yobi = /(さん|ちゃん|先生|様)$/.test(name || '') ? name : `${name}さん`;
     document.getElementById('tensaku-title').textContent = `${yobi}の写真`;
     document.getElementById('tensaku-modal').classList.add('open');
+    const note = document.getElementById('tensaku-note');
+    note.className = ''; note.textContent = '';
     const one = await phFetchOne(id);
     if (!one || !one.image_data) { alert('写真が読み込めませんでした'); return; }
+    // 提出のときに書いてくれた文章を、写真の上に出す（見ながら添削できるように）
+    if (one.content && one.content.trim()) {
+      note.textContent = one.content.trim();
+      note.className = 'on';
+    }
     // ★ 一度添削したものを開き直したときは、描いた線が残った状態で開く（続きから描ける）。
     //   添削後の画像には余白がもう入っているので、そのときは余白を足さない。
     const done = !!one.annotated_image;
