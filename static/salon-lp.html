@@ -132,6 +132,33 @@
   .curriculum .ttl { font-size: 14.5px; line-height: 1.8; }
   .curriculum .ttl span { display: block; font-size: 12.5px; color: var(--text-soft); margin-top: 3px; }
 
+  /* ---------- 10ヶ月の地図 ---------- */
+  .roadmap {
+    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg);
+    padding: 8px 26px; box-shadow: var(--shadow-sm);
+  }
+  .roadmap li {
+    list-style: none; padding: 15px 0; border-bottom: 1px dashed var(--line);
+    display: flex; gap: 16px; align-items: baseline;
+  }
+  .roadmap li:last-child { border-bottom: none; }
+  .roadmap .when {
+    font-family: var(--serif); font-size: 12px; color: var(--gold); letter-spacing: .08em;
+    flex-shrink: 0; width: 78px;
+  }
+  .roadmap .what { font-size: 14.5px; line-height: 1.8; flex: 1; }
+  .roadmap .count { font-size: 12px; color: var(--text-soft); flex-shrink: 0; letter-spacing: .04em; }
+  .roadmap__total {
+    text-align: center; font-size: 13.5px; color: var(--text-soft);
+    line-height: 2.05; margin-top: 18px;
+  }
+  .roadmap__total strong { font-family: var(--serif); font-size: 16px; color: var(--blue-deep); letter-spacing: .04em; }
+  @media (max-width: 520px) {
+    .roadmap { padding: 8px 18px; }
+    .roadmap li { flex-wrap: wrap; gap: 4px 12px; }
+    .roadmap .what { flex-basis: 100%; order: 3; }
+  }
+
   /* ---------- ギャラリー ---------- */
   .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .gallery img { aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; }
@@ -516,6 +543,26 @@
       <li><span class="no">07</span><span class="ttl">インスタの育て方<span>アルゴリズムに振り回されない、本質的な発信の考え方</span></span></li>
       <li><span class="no">08</span><span class="ttl">集客につなげるテーブルフォト活用<span>撮った写真を、教室やお店の動線にのせる</span></span></li>
     </ul>
+
+    <div class="divider">✦</div>
+
+    <h3 style="font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:.05em;text-align:center;margin-bottom:10px;">10ヶ月の地図</h3>
+    <p class="lead">動画は一度に全部は開きません。ご入会の日から1ヶ月ごとに、その月のぶんだけが開きます。<br>「見きれない」が起きないように、この順番にしています。</p>
+
+    <ul class="roadmap">
+      <li><span class="when">入会直後</span><span class="what">あなたの世界観を、言葉にする<br><span style="font-size:12.5px;color:var(--text-soft);">世界観テイスト診断つき</span></span><span class="count">6本</span></li>
+      <li><span class="when">1ヶ月目</span><span class="what">スマホ・カメラで撮れるようになる</span><span class="count">7本</span></li>
+      <li><span class="when">2ヶ月目</span><span class="what">テーブルフォトの基本</span><span class="count">7本</span></li>
+      <li><span class="when">3ヶ月目</span><span class="what">スタイリングの型</span><span class="count">7本</span></li>
+      <li><span class="when">4ヶ月目</span><span class="what">スタイリング応用</span><span class="count">7本</span></li>
+      <li><span class="when">5ヶ月目</span><span class="what">光を操る（前半）</span><span class="count">6本</span></li>
+      <li><span class="when">6ヶ月目</span><span class="what">光を操る（後半）＋レタッチ</span><span class="count">7本</span></li>
+      <li><span class="when">7ヶ月目</span><span class="what">リールと発信の型</span><span class="count">6本</span></li>
+      <li><span class="when">8ヶ月目</span><span class="what">誰に、何を届けるか</span><span class="count">6本</span></li>
+      <li><span class="when">9ヶ月目</span><span class="what">申し込みまでつなげる</span><span class="count">5本</span></li>
+    </ul>
+
+    <p class="roadmap__total"><strong>全64本 ＋ 世界観テイスト診断</strong><br>10ヶ月かけて、ひと通り受け取っていただけます。</p>
 
     <div class="divider">✦</div>
 
